@@ -28,9 +28,12 @@ Otwórz `index.html` (dwuklik) albo przez GitHub Pages / dowolny serwer statyczn
 
 ## Status designu
 
-Layout i kolory to na razie wartości ze specyfikacji (fallback). Źródłem prawdy
-jest Figma: plik `qbUbOoHoC3O0QjA8TeN0vG`, node `2193-8169` („instruktaz”) —
-po uzyskaniu dostępu MCP do pliku wymiary, pozycje, ścieżki narożników
-i tokeny kolorów zostaną podmienione na dokładne wartości z Dev Mode.
-Wszystko jest w obiektach `SCENE`, `FRAME`, `THEMES` na górze `app.js`,
-więc podmiana jest punktowa.
+Layout, kolory i assety pochodzą wprost z Figmy (plik `z7iTUuRRDivpY8NcMXptdR`,
+node `1-35` „instruktaz”): pozycje wszystkich 52 segmentów, style przycisków
+(gradienty, bordery, cienie), centralny panel, tekst (Caudex Bold 160px,
+`#d8ca94`) oraz eksporty graficzne w `assets/` (tło-ramka PNG, tekstura panelu,
+4 narożniki SVG, font Caudex woff2).
+
+Uwaga: tło i narożniki mają kolory wypalone w assetach — motywy (`THEMES`
+w `app.js`) sterują segmentami, panelem i tekstem. Motyw 1 („yellow”) jest
+wypełniony tokenami z Figmy, motywy 2–5 to placeholdery do uzupełnienia.

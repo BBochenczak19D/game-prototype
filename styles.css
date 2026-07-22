@@ -1,17 +1,38 @@
 /* ============================================================
    Quizsteries — Instruktaż
-   Kolory sterowane WYŁĄCZNIE zmiennymi CSS (podmieniane z JS
-   przy zmianie motywu). Nigdzie w regułach nie ma zahardkodowanych
-   kolorów sceny.
+   Wartości z Figmy: plik z7iTUuRRDivpY8NcMXptdR, node 1-35.
+   Kolory sceny idą przez zmienne CSS (podmieniane z JS przy
+   zmianie motywu) — bez zahardkodowanych kolorów w segmentach.
    ============================================================ */
+
+/* Font tekstu zadania: Caudex Bold (jak w Figmie), lokalnie z repo */
+@font-face {
+  font-family: "Caudex";
+  font-style: normal;
+  font-weight: 700;
+  src: url("assets/fonts/caudex-bold-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+1E00-1E9F, U+2020, U+2113;
+}
+@font-face {
+  font-family: "Caudex";
+  font-style: normal;
+  font-weight: 700;
+  src: url("assets/fonts/caudex-bold-latin.woff2") format("woff2");
+}
 
 :root {
   /* Wartości startowe — nadpisywane przez applyTheme() w app.js */
-  --bg: #f3e9d7;
-  --segment-off: #e3d2a9;
-  --segment-on: #ffc821;
-  --corner: #ffc821;
-  --text: #2a2118;
+  --bg: #100903;
+  --panel-border: #5c500a;
+  --seg-border-off: #f6e472;
+  --seg-left-border-off: #5c500a;
+  --seg-grad-from: #141302;
+  --seg-grad-to: #76670c;
+  --shell-from: rgba(6, 20, 26, 0.32);
+  --shell-to: rgba(8, 70, 66, 0.32);
+  --seg-on: #ceb935;
+  --seg-on-border: #f6e472;
+  --text: #d8ca94;
 }
 
 * {
@@ -25,17 +46,15 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #141414; /* letterbox wokół skalowanej sceny */
+  background: var(--bg); /* letterbox = tło sceny z Figmy (#100903) */
 }
 
-/* Viewport — wypełnia okno, scena jest w nim centrowana i skalowana */
 #viewport {
   position: fixed;
   inset: 0;
 }
 
-/* Scena — STAŁE wymiary z Figmy, ustawiane w app.js (SCENE.width/height).
-   Skala liczona z window.innerWidth/innerHeight, transform w app.js. */
+/* Scena — stałe wymiary z Figmy (2880×1800), skalowana w app.js */
 #scene {
   position: absolute;
   top: 50%;
@@ -43,56 +62,138 @@ body {
   transform-origin: center center;
 }
 
-/* Tło sceny */
+/* Tło: eksport „basic-instruktaz 3” (ornamentowa ramka sci-fi).
+   Rozciągnięcie wg Figmy: w 100.45%, h 100.02%, top -0.01%. */
 .scene-bg {
   position: absolute;
-  inset: 0;
-  background: var(--bg);
+  left: 0;
+  top: -0.01%;
+  width: 100.45%;
+  height: 100.02%;
+  max-width: none;
+  pointer-events: none;
 }
 
-/* Segment timera (pigułka) — pozycja/rozmiar inline z configu w app.js */
-.segment {
+/* --- Centralny panel (Frame 32): x455 y454, 1959×883 --- */
+.panel {
   position: absolute;
-  background: var(--segment-off);
+  border: 10px solid var(--panel-border);
+  border-radius: 24px;
+  opacity: 0.9;
+  overflow: hidden;
+  box-shadow: 0 12px 52px 6px rgba(5, 17, 40, 0.6),
+    -2px 2px 32px 6px #030c12;
+}
+
+/* Tekstura panelu — w Figmie narysowana pionowo (883×1959) i obrócona 90° */
+.panel-texture {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 883px;
+  height: 1959px;
+  max-width: none;
+  object-fit: cover;
+  transform: translate(-50%, -50%) rotate(90deg);
+  border-radius: 24px;
+  pointer-events: none;
+}
+
+/* --- Segment timera (QUIZ/button) ---
+   Baza rysowana pionowo 83×328 (jak komponent w Figmie);
+   poziome segmenty dostają transform rotate z configu w app.js. */
+.seg {
+  position: absolute;
+}
+
+/* Zewnętrzna skorupa (turkusowy gradient) — góra / dół / prawo */
+.seg.shell {
+  border: 2px solid #040b0c;
+  padding: 8px;
+  overflow: hidden;
+  background-image: linear-gradient(
+    80.453deg,
+    var(--shell-from) 31.869%,
+    var(--shell-to) 82.986%
+  );
+  box-shadow: -5px 6px 42px 2px rgba(5, 19, 22, 0.6),
+    -10px 10px 64px 12px #051114;
+}
+
+/* Wnętrze segmentu — stan OFF (przygaszony) */
+.seg-core {
+  width: 100%;
+  height: 100%;
+  border: 3px solid var(--seg-border-off);
+  opacity: 0.9;
+  backdrop-filter: blur(7.5px);
+  background-image: linear-gradient(
+    5.593deg,
+    var(--seg-grad-from) 12.611%,
+    var(--seg-grad-to) 271.55%
+  );
+  box-shadow: 0 12px 52px 6px rgba(5, 17, 40, 0.6),
+    -2px 2px 32px 6px #030c12;
   transition: background-color 120ms linear;
 }
 
-.segment.on {
-  background: var(--segment-on);
+/* Wariant lewej kolumny: bez skorupy, ciemniejszy border, gradient 53° */
+.seg.plain .seg-core {
+  border-color: var(--seg-left-border-off);
+  background-image: linear-gradient(
+    53.121deg,
+    var(--seg-grad-from) 12.611%,
+    var(--seg-grad-to) 271.55%
+  );
 }
 
-/* Narożnik — inline SVG, fill przez zmienne CSS */
+/* Stan ON (zapalony) — jak zapalone segmenty w Figmie (#ceb935) */
+.seg.on .seg-core {
+  background-image: none;
+  background-color: var(--seg-on);
+  border-color: var(--seg-on-border);
+  opacity: 1;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+/* --- Narożniki: eksporty SVG z Figmy (Group 42–45).
+   Grafika wystaje poza box 357×363 (cienie) — insety wg Figmy. --- */
 .corner {
   position: absolute;
+  width: 357px;
+  height: 363px;
+  pointer-events: none;
 }
 
-.corner svg {
-  display: block;
-  width: 100%;
-  height: 100%;
+.corner img {
+  position: absolute;
+  left: -17.09%;
+  top: -13.5%;
+  width: 134.18%;
+  height: 133.61%;
+  max-width: none;
 }
 
-.corner path {
-  fill: var(--segment-off);
-  transition: fill 120ms linear;
+.corner.corner-br img {
+  left: -0.84%;
+  top: -0.83%;
+  width: 101.68%;
+  height: 101.66%;
 }
 
-.corner.on path {
-  fill: var(--corner);
-}
-
-/* Tekst zadania — wyśrodkowany na scenie */
+/* --- Tekst zadania: Caudex Bold 160px, beige/500, środek sceny --- */
 .task-text {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 1900px;
+  width: 1632px;
   text-align: center;
-  font-family: "Arial Black", "Segoe UI", Arial, sans-serif;
-  font-weight: 900;
-  font-size: 140px;
-  line-height: 1.15;
+  font-family: "Caudex", Georgia, serif;
+  font-weight: 700;
+  font-size: 160px;
+  line-height: 1.5;
   color: var(--text);
   user-select: none;
 }

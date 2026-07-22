@@ -2,57 +2,66 @@
 
 /* ============================================================
    KONFIGURACJA — wszystko edytowalne w jednym miejscu.
-   UWAGA: wartości layoutu to FALLBACK ze specyfikacji.
-   Figma (node 2193-8169 „instruktaz”) jest źródłem prawdy —
-   po uzyskaniu dostępu do pliku przez MCP należy podmienić
-   wymiary/pozycje/kolory na dokładne wartości z Dev Mode.
+   Layout i kolory: dokładne wartości z Figmy
+   (plik z7iTUuRRDivpY8NcMXptdR, node 1-35 „instruktaz”).
    ============================================================ */
 
-/* --- Scena: stałe wymiary frame'a „instruktaz” z Figmy --- */
-const SCENE = {
-  width: 2880,
-  height: 1800,
-  cornerRadius: 96, // zaokrąglenie prostokąta tła
+/* --- Scena: frame „instruktaz” --- */
+const SCENE = { width: 2880, height: 1800 };
+
+/* --- Centralny panel (Frame 32) --- */
+const PANEL = { x: 455, y: 454, w: 1959, h: 883 };
+
+/* --- Rzędy segmentów (QUIZ/button, baza 83×328 rysowana pionowo).
+   Pozycje wizualne w px sceny, wprost z Figmy:
+   - top:    Frame 184 @ (491,103), 18 szt., rozstaw 107.529 px
+   - bottom: Frame 183 @ (479,1361), 18 szt., rozstaw 108 px
+   - right:  8 instancji @ x2445, y od 481 co 108 (poziome, 328×83)
+   - left:   Frame 185 @ (106,481), 8 szt. co 108 (wariant „plain”)
+   Poziome segmenty to pionowa baza obrócona transformem (jak w Figmie). --- */
+const ROWS = {
+  top:    { count: 18, x0: 491,  y: 103,  pitch: 1828 / 17, orient: "v", variant: "shell", transform: "" },
+  right:  { count: 8,  x: 2445,  y0: 481, pitch: 108,       orient: "h", variant: "shell", transform: "rotate(90deg) scaleY(-1)" },
+  bottom: { count: 18, x0: 479,  y: 1361, pitch: 108,       orient: "v", variant: "shell", transform: "" },
+  left:   { count: 8,  x: 106,   y0: 481, pitch: 108,       orient: "h", variant: "plain", transform: "rotate(90deg)" },
 };
 
-/* --- Ramka-timer: segmenty (pigułki) + narożniki ---
-   Pigułka bazowa: 328 × 83, pełne zaokrąglenie (radius = 41.5).
-   Geometria sceny (2880 szer.) wymusza orientację:
-   - GÓRA / DÓŁ: 18 pigułek ustawionych PIONOWO (83 szer. × 328 wys.),
-     bo 18 × 328 nie mieści się w 2880 px,
-   - LEWO / PRAWO: 8 pigułek POZIOMO (328 szer. × 83 wys.).
-   Grubość ramki jest wtedy spójna (~328 px) ze wszystkich stron.
-   Dokładne x/y do zweryfikowania z Figmą. */
-const FRAME = {
-  padding: 40, // odstęp ramki od krawędzi sceny
-  pill: { long: 328, short: 83, radius: 41.5 },
-  corner: { w: 357, h: 363 },
-  counts: { top: 18, bottom: 18, left: 8, right: 8 },
-};
+/* Rozmiar bazowej pigułki (pion) */
+const PILL = { w: 83, h: 328 };
 
-/* --- Narożnik: ścieżka SVG (placeholder — docelowo path z Figmy).
-   viewBox 0 0 357 363, wariant „top-left”; pozostałe rogi przez lustrzane
-   odbicia (transform w buildCorners). --- */
-const CORNER_SVG_PATH = "M 357 0 H 190 A 190 190 0 0 0 0 190 V 363 H 357 Z";
+/* --- Narożniki: eksporty SVG (Group 42–45), pozycje z Figmy.
+   To statyczny ornament ramki — w tym designie nie zapala się
+   (kolory są wypalone w grafice SVG). --- */
+const CORNERS = [
+  { cls: "corner-tl", src: "assets/corner-tl.svg", x: 106,  y: 103,  transform: "scaleX(-1)" },
+  { cls: "corner-tr", src: "assets/corner-tr.svg", x: 2416, y: 103,  transform: "" },
+  { cls: "corner-bl", src: "assets/corner-bl.svg", x: 106,  y: 1333, transform: "rotate(180deg)" },
+  { cls: "corner-br", src: "assets/corner-br.svg", x: 2416, y: 1327, transform: "scaleY(-1)" },
+];
 
 /* --- Motywy: 5 zestawów kolorów.
-   Motyw 0 („yellow”) = kolory z designu (fallback do potwierdzenia
-   z tokenami Figmy). Motywy 1–4 to placeholdery (kopie yellow) —
-   kolory zostaną dopisane później. --- */
+   Motyw 0 („yellow”) = tokeny z Figmy. Motywy 1–4 to placeholdery
+   (kopie yellow) — kolory zostaną dopisane później.
+   Uwaga: tło (PNG) i narożniki (SVG) mają kolory wypalone w assetach —
+   motyw steruje segmentami, panelem i tekstem. --- */
 const THEMES = [
   {
     name: "yellow",
-    bg: "#f3e9d7", // beż tła
-    segmentOff: "#e3d2a9", // żółty przygaszony
-    segmentOn: "#ffc821", // żółty jasny
-    corner: "#ffc821",
-    text: "#2a2118", // ciemny tekst
+    bg: "#100903",                      // tło sceny / letterbox
+    panelBorder: "#5c500a",             // yellow/800
+    segBorderOff: "#f6e472",            // yellow/400
+    segLeftBorderOff: "#5c500a",        // yellow/800 (lewa kolumna)
+    segGradFrom: "#141302",             // yellow/960
+    segGradTo: "#76670c",               // yellow/700
+    shellFrom: "rgba(6, 20, 26, 0.32)", // turquoise/925
+    shellTo: "rgba(8, 70, 66, 0.32)",   // turquoise/700
+    segOn: "#ceb935",                   // zapalony segment
+    segOnBorder: "#f6e472",
+    text: "#d8ca94",                    // beige/500
   },
-  { name: "theme-2 (placeholder)", bg: "#f3e9d7", segmentOff: "#e3d2a9", segmentOn: "#ffc821", corner: "#ffc821", text: "#2a2118" },
-  { name: "theme-3 (placeholder)", bg: "#f3e9d7", segmentOff: "#e3d2a9", segmentOn: "#ffc821", corner: "#ffc821", text: "#2a2118" },
-  { name: "theme-4 (placeholder)", bg: "#f3e9d7", segmentOff: "#e3d2a9", segmentOn: "#ffc821", corner: "#ffc821", text: "#2a2118" },
-  { name: "theme-5 (placeholder)", bg: "#f3e9d7", segmentOff: "#e3d2a9", segmentOn: "#ffc821", corner: "#ffc821", text: "#2a2118" },
 ];
+// Motywy 2–5: na razie kopie yellow (placeholdery)
+for (let i = 1; i < 5; i++) THEMES.push({ ...THEMES[0], name: `theme-${i + 1} (placeholder)` });
 
 /* --- Rundy: tekst zadania + motyw + czas trwania (4000–5000 ms) --- */
 const ROUNDS = [
@@ -67,133 +76,92 @@ const ROUNDS = [
 const INTER_ROUND_PAUSE_MS = 600;
 
 /* ============================================================
-   LAYOUT — wyliczenie pozycji segmentów i narożników z configu.
-   Zwraca listę elementów { x, y, w, h, kind, step }, gdzie `step`
-   to indeks w kolejności zapalania po obwodzie:
-   góra (L→P) → narożnik PG → prawo (G→D) → narożnik PD →
-   dół (P→L) → narożnik LD → lewo (D→G) → narożnik LG.
-   Narożniki zapalają się RAZEM z sąsiednim segmentem (ten sam step).
+   LAYOUT — segmenty w kolejności zapalania po obwodzie:
+   góra (L→P) → prawo (G→D) → dół (P→L) → lewo (D→G).
    ============================================================ */
-function buildLayout() {
-  const { padding, pill, corner, counts } = FRAME;
-  const items = [];
-
-  // Równomierne rozmieszczenie n elementów o rozmiarze `size`
-  // na odcinku [start, start+span] (luz także przy końcach odcinka).
-  function distribute(start, span, n, size) {
-    const gap = (span - n * size) / (n + 1);
-    const out = [];
-    for (let i = 0; i < n; i++) out.push(start + gap + i * (size + gap));
-    return out;
-  }
-
-  const innerXStart = padding + corner.w;
-  const innerXSpan = SCENE.width - 2 * (padding + corner.w);
-  const innerYStart = padding + corner.h;
-  const innerYSpan = SCENE.height - 2 * (padding + corner.h);
-
+function buildSegments() {
+  const segs = [];
   let step = 0;
 
-  // GÓRA: pigułki pionowe, zapalanie od lewej do prawej
-  const topXs = distribute(innerXStart, innerXSpan, counts.top, pill.short);
-  topXs.forEach((x) => {
-    items.push({ kind: "segment", x, y: padding, w: pill.short, h: pill.long, step: step++ });
-  });
+  // GÓRA: od lewej do prawej
+  for (let i = 0; i < ROWS.top.count; i++) {
+    segs.push({ row: "top", x: ROWS.top.x0 + i * ROWS.top.pitch, y: ROWS.top.y, step: step++ });
+  }
+  // PRAWO: z góry na dół
+  for (let i = 0; i < ROWS.right.count; i++) {
+    segs.push({ row: "right", x: ROWS.right.x, y: ROWS.right.y0 + i * ROWS.right.pitch, step: step++ });
+  }
+  // DÓŁ: od prawej do lewej
+  for (let i = ROWS.bottom.count - 1; i >= 0; i--) {
+    segs.push({ row: "bottom", x: ROWS.bottom.x0 + i * ROWS.bottom.pitch, y: ROWS.bottom.y, step: step++ });
+  }
+  // LEWO: z dołu do góry
+  for (let i = ROWS.left.count - 1; i >= 0; i--) {
+    segs.push({ row: "left", x: ROWS.left.x, y: ROWS.left.y0 + i * ROWS.left.pitch, step: step++ });
+  }
 
-  // Narożnik PRAWY-GÓRNY — razem z ostatnim segmentem góry
-  items.push({
-    kind: "corner", variant: "tr",
-    x: SCENE.width - padding - corner.w, y: padding,
-    w: corner.w, h: corner.h, step: step - 1,
-  });
-
-  // PRAWO: pigułki poziome, zapalanie z góry na dół
-  const rightYs = distribute(innerYStart, innerYSpan, counts.right, pill.short);
-  rightYs.forEach((y) => {
-    items.push({ kind: "segment", x: SCENE.width - padding - pill.long, y, w: pill.long, h: pill.short, step: step++ });
-  });
-
-  // Narożnik PRAWY-DOLNY — razem z ostatnim segmentem prawej kolumny
-  items.push({
-    kind: "corner", variant: "br",
-    x: SCENE.width - padding - corner.w, y: SCENE.height - padding - corner.h,
-    w: corner.w, h: corner.h, step: step - 1,
-  });
-
-  // DÓŁ: pigułki pionowe, zapalanie od prawej do lewej
-  const bottomXs = distribute(innerXStart, innerXSpan, counts.bottom, pill.short).reverse();
-  bottomXs.forEach((x) => {
-    items.push({ kind: "segment", x, y: SCENE.height - padding - pill.long, w: pill.short, h: pill.long, step: step++ });
-  });
-
-  // Narożnik LEWY-DOLNY — razem z ostatnim segmentem dołu
-  items.push({
-    kind: "corner", variant: "bl",
-    x: padding, y: SCENE.height - padding - corner.h,
-    w: corner.w, h: corner.h, step: step - 1,
-  });
-
-  // LEWO: pigułki poziome, zapalanie z dołu do góry
-  const leftYs = distribute(innerYStart, innerYSpan, counts.left, pill.short).reverse();
-  leftYs.forEach((y) => {
-    items.push({ kind: "segment", x: padding, y, w: pill.long, h: pill.short, step: step++ });
-  });
-
-  // Narożnik LEWY-GÓRNY — razem z ostatnim segmentem lewej kolumny
-  items.push({
-    kind: "corner", variant: "tl",
-    x: padding, y: padding,
-    w: corner.w, h: corner.h, step: step - 1,
-  });
-
-  return { items, totalSteps: step };
+  return { segs, totalSteps: step };
 }
 
 /* ============================================================
    RENDER — budowa DOM sceny (raz, przy starcie)
    ============================================================ */
 const sceneEl = document.getElementById("scene");
-const layout = buildLayout();
+const layout = buildSegments();
 let litElements = []; // [{ el, step }] — do animacji
 
 function buildScene() {
   sceneEl.style.width = SCENE.width + "px";
   sceneEl.style.height = SCENE.height + "px";
 
-  // Tło
-  const bg = document.createElement("div");
+  // Tło (ornamentowa ramka z Figmy)
+  const bg = document.createElement("img");
   bg.className = "scene-bg";
-  bg.style.borderRadius = SCENE.cornerRadius + "px";
+  bg.src = "assets/bg-instruktaz.png";
+  bg.alt = "";
   sceneEl.appendChild(bg);
 
-  // Lustrzane odbicia narożnika bazowego (wariant „tl”)
-  const cornerTransforms = {
-    tl: "",
-    tr: "scaleX(-1)",
-    bl: "scaleY(-1)",
-    br: "scale(-1, -1)",
-  };
+  // Centralny panel z teksturą
+  const panel = document.createElement("div");
+  panel.className = "panel";
+  panel.style.left = PANEL.x + "px";
+  panel.style.top = PANEL.y + "px";
+  panel.style.width = PANEL.w + "px";
+  panel.style.height = PANEL.h + "px";
+  panel.innerHTML = '<img class="panel-texture" src="assets/panel-texture.png" alt="">';
+  sceneEl.appendChild(panel);
 
-  layout.items.forEach((item) => {
-    let el;
-    if (item.kind === "segment") {
-      el = document.createElement("div");
-      el.className = "segment";
-      el.style.borderRadius = FRAME.pill.radius + "px";
+  // Segmenty timera — baza pionowa 83×328; poziome przez transform.
+  // Dla poziomych: box 328×83 uzyskujemy obracając bazę wokół środka,
+  // stąd korekta pozycji o (328−83)/2 = 122.5 px.
+  layout.segs.forEach((seg) => {
+    const row = ROWS[seg.row];
+    const el = document.createElement("div");
+    el.className = "seg " + row.variant;
+    el.style.width = PILL.w + "px";
+    el.style.height = PILL.h + "px";
+    if (row.orient === "v") {
+      el.style.left = seg.x + "px";
+      el.style.top = seg.y + "px";
     } else {
-      el = document.createElement("div");
-      el.className = "corner";
-      el.innerHTML =
-        `<svg viewBox="0 0 ${FRAME.corner.w} ${FRAME.corner.h}" ` +
-        `style="transform:${cornerTransforms[item.variant]}" ` +
-        `xmlns="http://www.w3.org/2000/svg"><path d="${CORNER_SVG_PATH}"/></svg>`;
+      el.style.left = seg.x + (PILL.h - PILL.w) / 2 + "px";
+      el.style.top = seg.y - (PILL.h - PILL.w) / 2 + "px";
+      el.style.transform = row.transform;
     }
-    el.style.left = item.x + "px";
-    el.style.top = item.y + "px";
-    el.style.width = item.w + "px";
-    el.style.height = item.h + "px";
+    el.innerHTML = '<div class="seg-core"></div>';
     sceneEl.appendChild(el);
-    litElements.push({ el, step: item.step });
+    litElements.push({ el, step: seg.step });
+  });
+
+  // Narożniki (statyczny ornament)
+  CORNERS.forEach((c) => {
+    const el = document.createElement("div");
+    el.className = "corner " + c.cls;
+    el.style.left = c.x + "px";
+    el.style.top = c.y + "px";
+    if (c.transform) el.style.transform = c.transform;
+    el.innerHTML = `<img src="${c.src}" alt="">`;
+    sceneEl.appendChild(el);
   });
 
   // Tekst zadania
@@ -217,9 +185,15 @@ window.addEventListener("resize", fitScene);
 function applyTheme(theme) {
   const root = document.documentElement.style;
   root.setProperty("--bg", theme.bg);
-  root.setProperty("--segment-off", theme.segmentOff);
-  root.setProperty("--segment-on", theme.segmentOn);
-  root.setProperty("--corner", theme.corner);
+  root.setProperty("--panel-border", theme.panelBorder);
+  root.setProperty("--seg-border-off", theme.segBorderOff);
+  root.setProperty("--seg-left-border-off", theme.segLeftBorderOff);
+  root.setProperty("--seg-grad-from", theme.segGradFrom);
+  root.setProperty("--seg-grad-to", theme.segGradTo);
+  root.setProperty("--shell-from", theme.shellFrom);
+  root.setProperty("--shell-to", theme.shellTo);
+  root.setProperty("--seg-on", theme.segOn);
+  root.setProperty("--seg-on-border", theme.segOnBorder);
   root.setProperty("--text", theme.text);
 }
 
@@ -249,7 +223,7 @@ function startRound(index) {
 }
 
 function setSegmentsProgress(progress) {
-  // Element ze `step` zapala się, gdy progress przekroczy jego próg
+  // Segment ze `step` zapala się, gdy progress przekroczy jego próg
   litElements.forEach(({ el, step }) => {
     el.classList.toggle("on", progress >= (step + 1) / layout.totalSteps);
   });
