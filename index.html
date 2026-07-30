@@ -12,7 +12,15 @@
     Scena ma stałe wymiary (px z Figmy) i jest skalowana do okna przez transform: scale().
     Cała zawartość sceny (segmenty timera, narożniki, tekst) generowana jest w app.js
     z obiektów konfiguracyjnych na górze pliku.
+
+    Pasek na górze NIE jest częścią designu — to podgląd/przełącznik wersji timera.
   -->
+  <header id="topbar">
+    <span class="topbar-title">Quizsteries <span class="sep">·</span> instruktaż</span>
+    <div id="version-switch" class="switch" role="group" aria-label="Wersja timera"></div>
+    <span class="topbar-hint">spacja — pauza <span class="sep">·</span> ←/→ — runda <span class="sep">·</span> R — restart</span>
+  </header>
+
   <div id="viewport">
     <div id="scene"></div>
   </div>

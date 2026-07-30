@@ -32,7 +32,13 @@
   --shell-to: rgba(8, 70, 66, 0.32);
   --seg-on: #ceb935;
   --seg-on-border: #f6e472;
+  /* gradient zapalonego segmentu w wersji 2 (yellow/800 → yellow/500) */
+  --seg-on-from: #5c500a;
+  --seg-on-to: #ceb935;
   --text: #d8ca94;
+
+  /* wysokość paska podglądu nad sceną (poza designem) */
+  --header-h: 54px;
 }
 
 * {
@@ -49,9 +55,92 @@ body {
   background: var(--bg); /* letterbox = tło sceny z Figmy (#100903) */
 }
 
+/* ============================================================
+   PASEK PODGLĄDU (poza designem) — przełącznik wersji timera.
+   Celowo neutralny, systemowy font: to narzędzie, nie część gry.
+   ============================================================ */
+#topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--header-h);
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 0 18px;
+  background: #0a1014;
+  border-bottom: 1px solid #17262c;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 13px;
+  color: #7f8f96;
+  user-select: none;
+  z-index: 10;
+}
+
+.topbar-title {
+  color: #d8ca94;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.topbar-hint {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+#topbar .sep {
+  color: #3d5058;
+  padding: 0 2px;
+}
+
+/* Segmentowany przełącznik wersji */
+.switch {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  background: #060c0f;
+  border: 1px solid #17262c;
+  border-radius: 8px;
+}
+
+.switch button {
+  padding: 5px 14px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: #8fa3ab;
+  font: inherit;
+  font-size: 12.5px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.switch button:hover {
+  color: #d8ca94;
+  background: #101c22;
+}
+
+.switch button[aria-pressed="true"] {
+  background: #1d1a08;
+  border-color: #5c500a;
+  color: #f6e472;
+}
+
+/* Scena mieszka pod paskiem */
 #viewport {
   position: fixed;
-  inset: 0;
+  top: var(--header-h);
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+@media (max-width: 900px) {
+  .topbar-hint {
+    display: none;
+  }
 }
 
 /* Scena — stałe wymiary z Figmy (2880×1800), skalowana w app.js */
@@ -155,6 +244,23 @@ body {
   opacity: 1;
   backdrop-filter: none;
   box-shadow: none;
+}
+
+/* --- Wariant WERSJI 2: pigułka (pełne zaokrąglenie) ---
+   Figma: shell rounded 999999px, rdzeń 99999px; zapalony segment
+   ma gradient yellow/800 → yellow/500 pod kątem 185.18°. */
+.seg.pill,
+.seg.pill .seg-core {
+  border-radius: 9999px;
+}
+
+.seg.pill.on .seg-core {
+  background-color: transparent;
+  background-image: linear-gradient(
+    185.182deg,
+    var(--seg-on-from) 31.108%,
+    var(--seg-on-to) 90.45%
+  );
 }
 
 /* --- Narożniki: eksporty SVG z Figmy (Group 42–45).
