@@ -90,6 +90,31 @@ body {
   white-space: nowrap;
 }
 
+/* Podpis + grupa przycisków trzymane blisko siebie (np. „życia”) */
+.topbar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+/* Sterowanie jest inne dla każdego ekranu — nieaktywne grupy znikają */
+.topbar-group[hidden] {
+  display: none;
+}
+
+/* Wybór ekranu: instruktaż / tablet gracza */
+#view-select {
+  padding: 5px 10px;
+  border: 1px solid #5c500a;
+  border-radius: 6px;
+  background: #1d1a08;
+  color: #f6e472;
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
 #topbar .sep {
   color: #3d5058;
   padding: 0 2px;
@@ -137,7 +162,9 @@ body {
   bottom: 0;
 }
 
-@media (max-width: 900px) {
+/* Kontrolki tabletu (życia + 5 wariantów animacji) sięgają ~1070 px —
+   poniżej tej szerokości podpowiedź klawiszy ustępuje im miejsca. */
+@media (max-width: 1250px) {
   .topbar-hint {
     display: none;
   }
@@ -151,14 +178,18 @@ body {
   transform-origin: center center;
 }
 
-/* Tło: eksport „basic-instruktaz 3” (ornamentowa ramka sci-fi).
-   Rozciągnięcie wg Figmy: w 100.45%, h 100.02%, top -0.01%. */
+/* Warstwa bieżącego ekranu — wymieniana przy przełączaniu widoku.
+   Pokrywa się ze sceną, więc procenty w środku liczą się od 2880×1800. */
+.view {
+  position: absolute;
+  inset: 0;
+}
+
+/* Tło ekranu (eksport PNG z Figmy). Każdy widok ma własne rozciągnięcie
+   — width/height/top wstawia app.js z INSTRUKTAZ_BG / TABLET_BG. */
 .scene-bg {
   position: absolute;
   left: 0;
-  top: -0.01%;
-  width: 100.45%;
-  height: 100.02%;
   max-width: none;
   pointer-events: none;
 }
@@ -286,6 +317,370 @@ body {
   top: -0.83%;
   width: 101.68%;
   height: 101.66%;
+}
+
+/* ============================================================
+   TABLET GRACZA — punkty i przyciski odpowiedzi
+   Figma: plik UCzHnyMnTZ2AS0PnYsw6eR, node 1935-11833 („odpowiedzi”).
+   Geometria i cienie 1:1 z Dev Mode.
+   ============================================================ */
+
+/* Punkty (node 1935-11840): Caudex 72 px, tracking 3.6, środek u góry.
+   Pion (top) ustawia app.js z POINTS. */
+.tablet-points {
+  position: absolute;
+  left: calc(50% - 0.5px);
+  transform: translate(-50%, -50%);
+  font-family: "Caudex", Georgia, serif;
+  font-weight: 400;
+  font-size: 72px;
+  line-height: 1.5;
+  letter-spacing: 3.6px;
+  color: var(--text);
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* Rząd odpowiedzi (Frame 146): wyśrodkowany, 43 px nad środkiem sceny */
+.tablet-answers {
+  position: absolute;
+  left: calc(50% + 0.1px);
+  top: calc(50% - 43px);
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 64px;
+}
+
+/* Quiz/button-types — kadr 572×572, przycina cienie skorupy (overflow
+   clip jak w Figmie) */
+.qbtn {
+  position: relative;
+  flex-shrink: 0;
+  width: 572px;
+  height: 572px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+/* QUIZ/button — turkusowa skorupa; te same tokeny co segmenty timera
+   (turquoise/925 → turquoise/700), tu pod kątem 25.339° */
+.qbtn-shell {
+  flex: 1 0 0;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border: 2px solid #040b0c;
+  border-radius: 999999px;
+  overflow: hidden;
+  background-image: linear-gradient(
+    25.339deg,
+    var(--shell-from) 31.869%,
+    var(--shell-to) 82.986%
+  );
+  box-shadow: -5px 6px 42px 2px rgba(5, 19, 22, 0.6),
+    -10px 10px 64px 12px #051114;
+}
+
+/* Rdzeń — jedyna część różniąca kolory; border i gradient z app.js */
+.qbtn-core {
+  flex: 1 0 0;
+  min-height: 0;
+  width: 100%;
+  border: 3px solid;
+  border-radius: 99999px;
+  opacity: 0.9;
+  overflow: hidden;
+  backdrop-filter: blur(7.5px);
+  box-shadow: 0 12px 52px 6px rgba(5, 17, 40, 0.6),
+    -2px 2px 32px 6px #030c12;
+}
+
+/* Wariant czerwonego i zielonego: obwódka 6 px zamiast poświaty, bez blura */
+.qbtn-core.ring {
+  backdrop-filter: none;
+  box-shadow: 0 12px 52px 6px rgba(5, 17, 40, 0.6), 0 0 0 6px #030512;
+}
+
+/* ============================================================
+   PANEL ŻYĆ (na tablecie gracza)
+   Figma: plik UCzHnyMnTZ2AS0PnYsw6eR, node 1935-11875 („życia”).
+   Geometria 1:1 z Dev Mode; grafiki to eksporty SVG w assets/.
+   Ujemne insety pod obrazkami to miejsce na poświatę i cień, które
+   w Figmie wychodzą poza box warstwy (procenty wprost z Dev Mode).
+   ============================================================ */
+.lives {
+  position: absolute;
+  width: 625px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 21px;
+}
+
+/* „Twoje życia:” — w Figmie Caudex Regular 42px, beige/500.
+   Uwaga: w repo mamy na razie tylko odmianę Bold, więc przeglądarka
+   podstawi ją także pod weight 400 (tekst wyjdzie grubszy niż w Figmie). */
+.lives-label {
+  width: 100%;
+  text-align: center;
+  font-family: "Caudex", Georgia, serif;
+  font-weight: 400;
+  font-size: 42px;
+  line-height: 1.5;
+  color: var(--text);
+  user-select: none;
+}
+
+/* Ośmiokątna ramka (Group 9 / vector „życia”): box 625×291 */
+.lives-frame {
+  position: relative;
+  width: 625px;
+  height: 291px;
+}
+
+.lives-frame > img {
+  position: absolute;
+  inset: -22.68% -10.56% -29.55% -13.76%;
+  width: auto;
+  height: auto;
+  max-width: none;
+  pointer-events: none;
+}
+
+/* Rząd kryształów (Frame 163): 125 px od lewej, 51 px od góry ramki */
+.lives-row {
+  position: absolute;
+  left: 125px;
+  top: 51px;
+  display: flex;
+  align-items: center;
+  gap: 52px;
+}
+
+/* Pojedyncze życie: pusty kryształ z nałożonym pełnym.
+   Utrata = zdjęcie warstwy wierzchniej, więc pod spodem od razu jest
+   właściwy zgaszony kafelek z Figmy (a nie przyciemniony pełny). */
+.life {
+  position: relative;
+  flex-shrink: 0;
+  width: 90.331px;
+  height: 189px;
+}
+
+.life-img {
+  position: absolute;
+  width: auto;
+  height: auto;
+  max-width: none;
+  pointer-events: none;
+}
+
+/* Insety poświat wprost z Dev Mode — puste i pełne różnią się lewym */
+.life-empty {
+  inset: -21.69% -59.07% -34.66% -57.82%;
+}
+
+.life-full {
+  inset: -21.69% -59.07% -34.66% -58.67%;
+  opacity: 1;
+  transition: opacity 180ms linear;
+}
+
+.life.lost .life-full {
+  opacity: 0;
+}
+
+/* ============================================================
+   UTRATA ŻYCIA — trzy warianty animacji do porównania.
+   Wariant wybiera klasa .anim-* na scenie; animuje się wyłącznie
+   warstwa wierzchnia (.life-full) i dwa pseudo-elementy efektów.
+   `forwards` trzyma stan końcowy do momentu, aż JS doda .lost.
+   ============================================================ */
+
+/* Linia opadającej energii (wariant „wyciek”) */
+.life::before {
+  content: "";
+  position: absolute;
+  left: -8%;
+  right: -8%;
+  height: 4px;
+  border-radius: 999px;
+  background: #0dedde;
+  box-shadow: 0 0 20px 5px rgba(13, 237, 222, 0.75);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* --- 1. Wyciek: energia opada, kryształ pustoszeje od góry ---
+   Procenty clip-path liczą się od boxu obrazka (295.5 px), w którym sam
+   kryształ zajmuje 13.9 %–77.9 % — stąd te wartości, a nie 0–100 %. */
+#scene.anim-drain .life.losing .life-full {
+  animation: life-drain 900ms cubic-bezier(0.45, 0, 0.4, 1) forwards;
+}
+
+#scene.anim-drain .life.losing::before {
+  animation: life-drain-line 900ms cubic-bezier(0.45, 0, 0.4, 1);
+}
+
+@keyframes life-drain {
+  0%   { clip-path: inset(0 0 0 0);        filter: brightness(1); opacity: 1; }
+  10%  { clip-path: inset(13.9% 0 0 0);    filter: brightness(1.7); opacity: 1; }
+  80%  { clip-path: inset(68% 0 0 0);      filter: brightness(1.1); opacity: 1; }
+  92%  { clip-path: inset(77.9% 0 0 0);    filter: brightness(1); opacity: 1; }
+  100% { clip-path: inset(77.9% 0 0 0);    opacity: 0; }
+}
+
+@keyframes life-drain-line {
+  0%   { top: 0;    opacity: 0; }
+  10%  { top: 0;    opacity: 1; }
+  92%  { top: 100%; opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* --- 2. Przepalenie: kryształ miga jak konająca żarówka i gaśnie ---
+   steps(1) daje twarde przeskoki zamiast płynnych przejść. */
+#scene.anim-burnout .life.losing .life-full {
+  animation: life-burnout 780ms steps(1, end) forwards;
+}
+
+@keyframes life-burnout {
+  0%   { opacity: 1;    filter: brightness(1); }
+  5%   { opacity: 0.15; filter: brightness(0.6); }
+  9%   { opacity: 1;    filter: brightness(1.2); }
+  16%  { opacity: 0.3;  filter: brightness(0.7); }
+  21%  { opacity: 1;    filter: brightness(1); }
+  32%  { opacity: 0.1;  filter: brightness(0.5); }
+  38%  { opacity: 1;    filter: brightness(1.9); }
+  47%  { opacity: 0.25; filter: brightness(0.6); }
+  54%  { opacity: 1;    filter: brightness(1.1); }
+  63%  { opacity: 0.08; filter: brightness(0.4); }
+  70%  { opacity: 1;    filter: brightness(3.4); }
+  80%  { opacity: 0.6;  filter: brightness(1.6); }
+  100% { opacity: 0;    filter: brightness(0.3); }
+}
+
+/* --- 3. Chwianie: coś uderza w kryształ, ten dostaje kloca i kołysze się
+   coraz słabiej, aż stanie. Kołysanie wokół środka kryształu (45.9 %
+   wysokości obrazka, bo nad nim jest zapas na poświatę). Pierwsze wychylenie
+   najmocniejsze, każde kolejne mniejsze — stąd wrażenie uderzenia, a nie
+   równomiernego dygotania. --- */
+#scene.anim-wobble .life.losing .life-full {
+  transform-origin: 50% 45.9%;
+  animation: life-wobble 560ms cubic-bezier(0.25, 0.6, 0.3, 1) forwards;
+}
+
+@keyframes life-wobble {
+  0%   { transform: translateX(0)      rotate(0deg)     scale(1, 1);       opacity: 1; filter: brightness(1); }
+  5%   { transform: translateX(5px)    rotate(3.4deg)   scale(1.07, 0.93); filter: brightness(1.8); }
+  14%  { transform: translateX(-4px)   rotate(-2.8deg)  scale(0.97, 1.03); filter: brightness(1.2); }
+  25%  { transform: translateX(3px)    rotate(2deg)     scale(1.02, 0.98); filter: brightness(1); }
+  36%  { transform: translateX(-2px)   rotate(-1.3deg)  scale(1, 1); }
+  47%  { transform: translateX(1.2px)  rotate(0.8deg); }
+  58%  { transform: translateX(-0.6px) rotate(-0.4deg); }
+  68%  { transform: translateX(0)      rotate(0deg);    filter: brightness(1); opacity: 1; }
+  82%  { filter: brightness(1.9); opacity: 1; }
+  92%  { opacity: 0; }
+  100% { transform: translateX(0) rotate(0deg); opacity: 0; filter: brightness(1.9); }
+}
+
+/* --- 4. Obrót: kafelek obraca się jak karta i wraca już pusty.
+   W połowie stoi krawędzią do widza (zerowa szerokość) — wtedy skok
+   z +90° na −90° jest niewidoczny, a kafelek wraca przodem, nie lustrem.
+   Jako jedyny wariant odsłania puste życie ruchem, zamiast gasić pełne. --- */
+#scene.anim-flip .lives-row {
+  perspective: 1200px;
+}
+
+#scene.anim-flip .life.losing {
+  animation: life-flip 620ms cubic-bezier(0.45, 0, 0.25, 1) forwards;
+}
+
+#scene.anim-flip .life.losing .life-full {
+  animation: life-flip-face 620ms steps(1, end) forwards;
+}
+
+@keyframes life-flip {
+  0%   { transform: rotateY(0deg); }
+  48%  { transform: rotateY(90deg); }
+  52%  { transform: rotateY(-90deg); }
+  100% { transform: rotateY(0deg); }
+}
+
+/* Pełne życie znika dokładnie wtedy, gdy kafelek jest krawędzią do widza */
+@keyframes life-flip-face {
+  0%   { opacity: 1; filter: brightness(1); }
+  30%  { opacity: 1; filter: brightness(2.2); }
+  50%  { opacity: 0; filter: brightness(1); }
+  100% { opacity: 0; filter: brightness(1); }
+}
+
+/* Kto woli bez ruchu — szanujemy ustawienie systemowe */
+@media (prefers-reduced-motion: reduce) {
+  .life.losing,
+  .life.losing .life-full,
+  .life.losing::before {
+    animation-duration: 1ms !important;
+  }
+}
+
+/* ============================================================
+   STAN „BRAK ŻYĆ” (Figma node 1936-11876)
+   Wobec stanu pełnego zmieniają się dwie rzeczy: przyciski gasną
+   do 40 % i na środku sceny wchodzi komunikat (Frame 165, 1772 px).
+   ============================================================ */
+.tablet-nolives {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 1772px;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  color: var(--text);
+  user-select: none;
+}
+
+.view.no-lives .tablet-nolives {
+  display: flex;
+  animation: nolives-in 260ms ease-out;
+}
+
+.view.no-lives .tablet-answers {
+  opacity: 0.4;
+}
+
+/* Przygaszenie przycisków — płynne, żeby przejście nie było skokowe */
+.tablet-answers {
+  transition: opacity 260ms linear;
+}
+
+.tablet-nolives-title {
+  font-family: "Caudex", Georgia, serif;
+  font-weight: 700;
+  font-size: 160px;
+  line-height: 1.5;
+  width: 100%;
+}
+
+.tablet-nolives-sub {
+  font-family: "Caudex", Georgia, serif;
+  font-weight: 400;
+  font-size: 72px;
+  line-height: 1.5;
+  width: 100%;
+}
+
+@keyframes nolives-in {
+  from { opacity: 0; transform: translate(-50%, calc(-50% + 24px)); }
+  to   { opacity: 1; transform: translate(-50%, -50%); }
 }
 
 /* --- Tekst zadania: Caudex Bold 160px, beige/500, środek sceny --- */

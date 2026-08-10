@@ -3,22 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quizsteries — Instruktaż</title>
+  <title>Quizsteries — prototyp</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <!--
-    Widok INSTRUKTAŻU gry „Quizsteries”.
-    Scena ma stałe wymiary (px z Figmy) i jest skalowana do okna przez transform: scale().
-    Cała zawartość sceny (segmenty timera, narożniki, tekst) generowana jest w app.js
+    Prototyp gry „Quizsteries”. Dwa ekrany przełączane w pasku u góry:
+    INSTRUKTAŻ (ekran wspólny) i TABLET GRACZA. W realnej rozgrywce lecą
+    równocześnie na dwóch różnych ekranach.
+
+    Scena ma stałe wymiary (px z Figmy) i jest skalowana do okna przez
+    transform: scale(). Cała zawartość sceny generowana jest w app.js
     z obiektów konfiguracyjnych na górze pliku.
 
-    Pasek na górze NIE jest częścią designu — to podgląd/przełącznik wersji timera.
+    Pasek na górze NIE jest częścią designu — to podgląd: wybór ekranu,
+    wersja timera oraz symulacja żyć i końca gry.
   -->
   <header id="topbar">
-    <span class="topbar-title">Quizsteries <span class="sep">·</span> instruktaż</span>
-    <div id="version-switch" class="switch" role="group" aria-label="Wersja timera"></div>
-    <span class="topbar-hint">spacja — pauza <span class="sep">·</span> ←/→ — runda <span class="sep">·</span> R — restart</span>
+    <span class="topbar-title">Quizsteries</span>
+    <select id="view-select" aria-label="Ekran"></select>
+
+    <div id="ctrl-instruktaz" class="topbar-group">
+      <div id="version-switch" class="switch" role="group" aria-label="Wersja timera"></div>
+    </div>
+
+    <div id="ctrl-tablet" class="topbar-group">
+      <span>życia</span>
+      <div id="lives-switch" class="switch" role="group" aria-label="Liczba żyć"></div>
+      <div class="switch">
+        <button type="button" id="lose-life">−1 życie</button>
+      </div>
+      <span>animacja</span>
+      <div id="anim-switch" class="switch" role="group" aria-label="Wariant animacji utraty życia"></div>
+    </div>
+
+    <span class="topbar-hint" id="topbar-hint"></span>
   </header>
 
   <div id="viewport">
