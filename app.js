@@ -69,9 +69,14 @@ const V2 = {
 
 /* Wersje timera do porównania (przełącznik w pasku nad sceną) */
 const VERSIONS = [
-  { id: "v1",  label: "V1 · ramka dookoła",      build: (layer) => buildV1(layer) },
-  { id: "v2a", label: "V2 · kolumny równolegle", build: (layer) => buildV2(layer, "parallel") },
-  { id: "v2b", label: "V2 · kolumny kolejno",    build: (layer) => buildV2(layer, "sequential") },
+  { id: "v1",  label: "V1 · ramka dookoła",      build: (l) => buildV1(l) },
+  { id: "v2a", label: "V2 · kolumny równolegle", build: (l) => buildV2(l, { mode: "parallel" }) },
+  { id: "v2b", label: "V2 · kolumny kolejno",    build: (l) => buildV2(l, { mode: "sequential" }) },
+  /* V3 = start z pełnymi kolumnami, timer opada w dół i gasi je kolumna po
+     kolumnie, aż wszystko jest puste. Warianty różni to, która kolumna
+     opada pierwsza. */
+  { id: "v3a", label: "V3 · opada od lewej",  build: (l) => buildV2(l, { mode: "sequential", invert: true, from: "top", first: "left" }) },
+  { id: "v3b", label: "V3 · opada od prawej", build: (l) => buildV2(l, { mode: "sequential", invert: true, from: "top", first: "right" }) },
 ];
 const DEFAULT_VERSION = "v1";
 
@@ -289,17 +294,29 @@ function buildV1(layer) {
   return segs;
 }
 
-/* --- WERSJA 2: dwie kolumny po 16 pigułek, ładowane od dołu do góry.
-   mode = "parallel"   → obie kolumny zapalają się równocześnie
-   mode = "sequential" → najpierw cała lewa, potem cała prawa --- */
-function buildV2(layer, mode) {
+/* --- WERSJE 2 i 3: dwie kolumny po 16 pigułek, obsługiwane od dołu do góry.
+   mode   = "parallel"   → obie kolumny działają równocześnie
+            "sequential" → najpierw cała jedna kolumna, potem druga
+   invert = false → segmenty się zapalają (V2: od pustych do pełnych)
+            true  → segmenty gasną     (V3: od pełnych do pustych)
+   first  = "left" | "right" → która kolumna idzie pierwsza (tylko sequential)
+   from   = "bottom" | "top" → od którego końca kolumny zaczyna się zmiana
+
+   V2 ładuje się od dołu do góry (tak jak zapalone segmenty w Figmie), a V3
+   opada od góry w dół, żeby pełne zostawały na dole jak kurczący się zapas.
+   Stąd `from` jest per wersja, a nie wspólne. --- */
+function buildV2(layer, { mode, invert = false, first = "left", from = V2.fillFrom }) {
   const n = V2.count;
   const segs = [];
 
-  V2.columns.forEach((col, c) => {
+  /* Kolejność obsługi kolumn. Pozycja kolumny na scenie (x, transform)
+     zostaje ta sama — odwracamy tylko to, która jest pierwsza w kolejce. */
+  const columns = first === "right" ? [...V2.columns].reverse() : V2.columns;
+
+  columns.forEach((col, c) => {
     for (let row = 0; row < n; row++) {
-      // pozycja w kolejce zapalania wewnątrz kolumny (0 = zapala się pierwszy)
-      const order = V2.fillFrom === "bottom" ? n - 1 - row : row;
+      // pozycja w kolejce wewnątrz kolumny (0 = zmienia się pierwszy)
+      const order = from === "bottom" ? n - 1 - row : row;
       const threshold =
         mode === "sequential" ? (c * n + order + 1) / (2 * n) : (order + 1) / n;
 
@@ -312,7 +329,7 @@ function buildV2(layer, mode) {
         pill: true,
       });
       layer.appendChild(el);
-      segs.push({ el, threshold });
+      segs.push({ el, threshold, invert });
     }
   });
 
@@ -660,16 +677,20 @@ function startRound(index) {
   const round = ROUNDS[state.roundIndex];
   applyTheme(THEMES[round.themeIndex]);
   if (textEl) textEl.textContent = round.text;
-  litElements.forEach(({ el }) => el.classList.remove("on"));
+  /* Stan startowy liczymy z progresu 0, a nie gasimy na sztywno — inaczej
+     wersje odwrócone (V3) zaczynałyby rundę puste zamiast pełne. */
+  setSegmentsProgress(0);
   state.phase = "running";
   state.phaseStart = performance.now();
   state.elapsedInPhase = 0;
   state.frozenAt = 0;
 }
 
+/* Segment zwykły zapala się po przekroczeniu swojego progu; odwrócony (V3)
+   startuje zapalony i w tym samym momencie gaśnie. */
 function setSegmentsProgress(progress) {
-  litElements.forEach(({ el, threshold }) => {
-    el.classList.toggle("on", progress >= threshold);
+  litElements.forEach(({ el, threshold, invert }) => {
+    el.classList.toggle("on", invert ? progress < threshold : progress >= threshold);
   });
 }
 
@@ -740,14 +761,17 @@ window.addEventListener("keydown", (e) => {
       setLives(LIVES.max);
       startRound(0);
       break;
-    /* Cyfry: na instruktażu wersja timera, na tablecie liczba żyć */
+    /* Cyfry: na instruktażu wersja timera (1–5), na tablecie liczba żyć (0–3).
+       Cyfry spoza zakresu danego ekranu są ignorowane. */
     case "Digit0":
     case "Digit1":
     case "Digit2":
-    case "Digit3": {
+    case "Digit3":
+    case "Digit4":
+    case "Digit5": {
       const n = Number(e.code.slice(5));
       if (currentViewId === "tablet") {
-        setLives(n);
+        if (n <= LIVES.max) setLives(n);
       } else if (n >= 1 && VERSIONS[n - 1]) {
         mountVersion(VERSIONS[n - 1].id);
       }

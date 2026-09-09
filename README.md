@@ -25,8 +25,17 @@ Można wysłać link prosto do jednego ekranu, dopisując `?view=` do adresu:
 | **V1 · ramka dookoła** | 52 segmenty zapalają się po obwodzie: góra → prawo → dół → lewo |
 | **V2 · kolumny równolegle** | dwie pionowe kolumny po 16 pigułek, obie ładują się jednocześnie od dołu do góry |
 | **V2 · kolumny kolejno** | najpierw cała lewa kolumna, potem cała prawa (też od dołu do góry) |
+| **V3 · opada od lewej** | wszystkie 32 pigułki startują zapalone i gasną kolumna po kolumnie, od góry w dół; pierwsza opada lewa |
+| **V3 · opada od prawej** | to samo, ale pierwsza opada prawa kolumna |
 
-Wersję też można wskazać w adresie: `?v=v1`, `?v=v2a`, `?v=v2b`.
+V3 zaczyna rundę z pełnymi kolumnami i kończy z pustymi — odwrotnie niż V2.
+Poza stanem różni się też kierunkiem w kolumnie: V2 ładuje się od dołu do
+góry (jak zapalone segmenty w Figmie), a V3 opada od góry w dół, więc pełne
+pigułki zostają na dole jak kurczący się zapas. Steruje tym opcja `from`
+przy budowie wersji w `app.js`, osobno dla każdej z nich.
+
+Wersję też można wskazać w adresie: `?v=v1`, `?v=v2a`, `?v=v2b`, `?v=v3a`
+(opada od lewej), `?v=v3b` (opada od prawej).
 
 W każdej wersji pełny timer = koniec czasu rundy (domyślnie 4500 ms), potem
 600 ms pauzy i następna runda; po piątej rundzie prototyp zapętla się od nowa.
@@ -76,7 +85,7 @@ odpala utrata pojedynczego życia (`−1 życie` albo klawisz `Z`).
 | `Spacja` | pauza / wznowienie (instruktaż) |
 | `→` / `←` | następna / poprzednia runda |
 | `R` | restart: runda 1 i pełne życia |
-| `1` / `2` / `3` | wersja timera (na instruktażu) |
+| `1`–`5` | wersja timera (na instruktażu) |
 | `0`–`3` | skok wprost do stanu żyć (na tablecie, bez animacji) |
 | `Z` | zła odpowiedź — jedno życie mniej, z animacją |
 
