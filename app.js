@@ -148,11 +148,85 @@ const LIFE_ANIMS = [
 const DEFAULT_ANIM = "wobble";
 
 /* ============================================================
+   WIDOK: QUIZ (drugi tryb tabletu gracza)
+   Figma: plik UCzHnyMnTZ2AS0PnYsw6eR, node 2168-692
+   („Quiz/Pytanie i odpowiedzi”) — pytanie, 4 odpowiedzi 2×2,
+   pasek czasu na dole. Stany wciśnięte przycisków to osobne node'y:
+   2169-740 (czerwony), 2169-742 (żółty), 2169-744 (niebieski),
+   2169-773 (zielony).
+   ============================================================ */
+
+/* Tło (warstwa „bgbg 1”) — rozciągnięcie wg Figmy */
+const QUIZ_BG = { src: "assets/bg-quiz.png", w: 101.04, h: 101.05, top: 0 };
+
+const QUIZ = {
+  question: "Co to jest? Ma klawisze, ale nie otwiera zamków?",
+  durationMs: 10000, // czas na odpowiedź = pełny pasek na dole
+  endHoldMs: 1500,   // po końcu czasu tyle stoi stan końcowy, potem pytanie od nowa
+};
+
+/* Odpowiedzi w kolejności siatki: górny rząd L→P, dolny rząd L→P.
+   Każdy kolor ma w Figmie dwie twarze:
+   – light = jasna, jak na ekranie 2168-692 (pełny kolor, jasny obrys),
+   – dark  = ciemna, jak w osobnych node'ach wciśniętych (gradienty).
+   Która jest domyślna, a która wciśnięta, decyduje wersja (QUIZ_VERSIONS).
+   fill = wypełnienie ramki, stroke = obrys 6 px na zewnątrz; kolor albo
+   gradient CSS. Gradienty ciemnych twarzy są przeliczone wprost z węzłów
+   Figmy — eksport z Dev Mode gubi w nich minus i podaje tylko pierwszy
+   kolor obrysu.
+   `ring` = obwódka 6 px zamiast rozmytej poświaty i bez blura — w obu
+   twarzach, tak samo jak w okrągłych przyciskach (czerwony i zielony). */
+const QUIZ_ANSWERS = [
+  {
+    id: "red", text: "Odpowiedź", ring: true,
+    light: { fill: "#b11719", stroke: "#f64949" }, // red/600, red/400
+    dark: {
+      fill: "linear-gradient(0.362deg, #8f1616 -29%, #230606 150.01%)", // red/700 → red/950
+      stroke: "linear-gradient(161.069deg, #b11719 16.61%, #210405 53.21%)",
+    },
+  },
+  {
+    id: "yellow", text: "Odpowiedź", ring: false,
+    light: { fill: "#a89311", stroke: "#f6e472" }, // yellow/600, yellow/400
+    dark: {
+      fill: "linear-gradient(180deg, #1a1804 -27.86%, #76670c 126%)", // yellow/900 → yellow/700
+      stroke: "linear-gradient(151.48deg, #ceb935 5.57%, #1a1804 57.39%)", // yellow/500 → yellow/900
+    },
+  },
+  {
+    id: "blue", text: "Odpowiedź", ring: false,
+    light: { fill: "#1e57e6", stroke: "#4d80ff" }, // dark-blue/500, dark-blue/400
+    dark: {
+      fill: "linear-gradient(0.231deg, #113aa2 -40.42%, #060c23 129.56%)", // dark-blue/600 → dark-blue/800
+      stroke: "linear-gradient(180.169deg, #1e57e6 -33.03%, #060c23 66.81%)", // dark-blue/500 → dark-blue/800
+    },
+  },
+  {
+    id: "green", text: "Odpowiedź", ring: true,
+    light: { fill: "#19980e", stroke: "#53f653" }, // green/700, green/400
+    dark: {
+      fill: "linear-gradient(180.099deg, #0d2805 -61.87%, #19980e 149.03%)", // green/900 → green/700
+      stroke: "linear-gradient(169.834deg, #0fcd4e 9.24%, #042108 55.84%)",
+    },
+  },
+];
+
+/* Dwie wersje do porównania (przełącznik w pasku nad sceną).
+   Ruch wciśnięcia jest w obu identyczny — różni je tylko to, która
+   twarz przycisku jest domyślna, a która pojawia się po wciśnięciu. */
+const QUIZ_VERSIONS = [
+  { id: "v1", label: "V1 · wciśnięcie przyciemnia", invert: false }, // jak w Figmie: jasne → ciemne
+  { id: "v2", label: "V2 · wciśnięcie rozjaśnia", invert: true },    // na odwrót: ciemne → jasne
+];
+const DEFAULT_QUIZ_VERSION = "v1";
+
+/* ============================================================
    WIDOKI (select w pasku nad sceną)
    ============================================================ */
 const VIEWS = [
-  { id: "instruktaz", label: "Instruktaż",    build: buildInstruktaz },
-  { id: "tablet",     label: "Tablet gracza", build: buildTablet },
+  { id: "instruktaz", label: "Instruktaż",           build: buildInstruktaz },
+  { id: "tablet",     label: "Tablet gracza",        build: buildTablet },
+  { id: "quiz",       label: "Tablet gracza · quiz", build: buildQuiz },
 ];
 const DEFAULT_VIEW = "instruktaz";
 
@@ -160,11 +234,13 @@ const DEFAULT_VIEW = "instruktaz";
 const HINTS = {
   instruktaz: "spacja — pauza · ←/→ — runda · R — restart",
   tablet: "Z — tracisz życie (z animacją) · 0–3 — skok do stanu · R — restart",
+  quiz: "kliknij odpowiedź · spacja — pauza · R — od nowa · 1/2 — wersja",
 };
 
 const STORAGE_KEY = "quizsteries-version";
 const VIEW_STORAGE_KEY = "quizsteries-view";
 const ANIM_STORAGE_KEY = "quizsteries-anim";
+const QUIZ_STORAGE_KEY = "quizsteries-quiz";
 
 /* ============================================================
    MOTYWY — 5 zestawów kolorów.
@@ -204,9 +280,11 @@ const layerEl = document.createElement("div"); // warstwa timera (tylko instrukt
 let textEl = null;
 let litElements = []; // [{ el, threshold }]
 let lifeEls = []; // kryształy w panelu żyć, od lewej
+let quizEls = null; // { grid, bar, answers } — tylko na widoku quizu
 let currentViewId = DEFAULT_VIEW;
 let currentVersionId = DEFAULT_VERSION;
 let currentAnimId = DEFAULT_ANIM;
+let currentQuizVersionId = DEFAULT_QUIZ_VERSION;
 
 /* Tło widoku — każdy ekran ma własne rozciągnięcie z Figmy */
 function makeBg(cfg) {
@@ -444,6 +522,85 @@ function buildTablet(root) {
 }
 
 /* ============================================================
+   QUIZ — pytanie, odpowiedzi 2×2, pasek czasu
+   ============================================================ */
+
+/* Kolor jako obraz CSS — twarze układają wypełnienie i obrys warstwami tła */
+const asImage = (paint) => (paint.startsWith("linear-gradient") ? paint : `linear-gradient(${paint}, ${paint})`);
+
+/* Przycisk odpowiedzi (Quiz/button-types 1134×382): skorupa → rdzeń → twarze
+   + tekst. Twarz domyślna leży pod spodem, wciśnięta na niej wchodzi
+   przejściem krycia. Wersja decyduje, która twarz z Figmy jest którą, więc
+   CSS dostaje gotowe obrazy i nie musi znać wersji. */
+function makeQuizAnswer(cfg, version) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "qa";
+  btn.dataset.answer = cfg.id;
+  btn.setAttribute("aria-pressed", "false");
+
+  const [idle, pressed] = version.invert ? [cfg.dark, cfg.light] : [cfg.light, cfg.dark];
+  btn.style.setProperty("--qa-fill", asImage(idle.fill));
+  btn.style.setProperty("--qa-stroke", asImage(idle.stroke));
+  btn.style.setProperty("--qa-fill-pressed", asImage(pressed.fill));
+  btn.style.setProperty("--qa-stroke-pressed", asImage(pressed.stroke));
+
+  btn.innerHTML =
+    `<span class="qa-shell"><span class="qa-core${cfg.ring ? " ring" : ""}">` +
+    `<span class="qa-face"></span><span class="qa-face qa-face-pressed"></span>` +
+    `<span class="qa-text"></span></span></span>`;
+  btn.querySelector(".qa-text").textContent = cfg.text;
+
+  /* Wybór na dotknięcie, a nie na puszczenie — w grze na czas liczy się
+     moment reakcji. Enter z klawiatury daje sam click (detail = 0). */
+  btn.addEventListener("pointerdown", (e) => {
+    if (e.button === 0) selectAnswer(cfg.id);
+  });
+  /* Bez fokusu po kliknięciu myszą — inaczej spacja (pauza) naciśnięta po
+     kliknięciu zapala obwódkę fokusu na odpowiedzi. Tab dalej działa. */
+  btn.addEventListener("mousedown", (e) => e.preventDefault());
+  btn.addEventListener("click", (e) => {
+    if (e.detail === 0) selectAnswer(cfg.id);
+  });
+  btn.addEventListener("animationend", (e) => {
+    if (e.animationName === "qa-press") btn.classList.remove("pressing");
+  });
+  return btn;
+}
+
+/* --- Widok quizu: tło + punkty + pytanie + odpowiedzi + pasek czasu --- */
+function buildQuiz(root) {
+  root.appendChild(makeBg(QUIZ_BG));
+
+  const points = document.createElement("div");
+  points.className = "quiz-points";
+  points.textContent = POINTS.value;
+  root.appendChild(points);
+
+  const question = document.createElement("div");
+  question.className = "quiz-question";
+  question.textContent = QUIZ.question;
+  root.appendChild(question);
+
+  const grid = document.createElement("div");
+  grid.className = "quiz-answers";
+  root.appendChild(grid);
+
+  const timer = document.createElement("div");
+  timer.className = "quiz-timer";
+  const bar = document.createElement("div");
+  bar.className = "quiz-timer-fill";
+  timer.appendChild(bar);
+  root.appendChild(timer);
+
+  quizEls = { grid, bar, answers: [] };
+
+  /* Quiz nie ma rund — kolory bierze z motywu bazowego */
+  applyTheme(THEMES[0]);
+  mountQuizVersion(currentQuizVersionId);
+}
+
+/* ============================================================
    SCENA I PRZEŁĄCZANIE WIDOKÓW
    ============================================================ */
 
@@ -463,6 +620,7 @@ function mountView(id) {
   layerEl.remove();
   litElements = [];
   lifeEls = [];
+  quizEls = null;
   textEl = null;
 
   viewEl.innerHTML = "";
@@ -472,8 +630,11 @@ function mountView(id) {
 
   document.getElementById("view-select").value = view.id;
   document.getElementById("topbar-hint").textContent = HINTS[view.id];
-  document.getElementById("ctrl-instruktaz").hidden = view.id !== "instruktaz";
-  document.getElementById("ctrl-tablet").hidden = view.id !== "tablet";
+  /* Każdy widok ma w pasku własną grupę sterowania: #ctrl-<id widoku> */
+  VIEWS.forEach((v) => {
+    const group = document.getElementById("ctrl-" + v.id);
+    if (group) group.hidden = v.id !== view.id;
+  });
 
   remember(VIEW_STORAGE_KEY, view.id);
 }
@@ -491,6 +652,29 @@ function mountVersion(id) {
 
   remember(STORAGE_KEY, version.id);
   startRound(state.roundIndex); // restart rundy, żeby animacja poszła od zera
+}
+
+/* Wersja quizu: przyciski budujemy od nowa, więc od razu stoją w nowej
+   twarzy domyślnej (bez przejścia ze starej), a pytanie startuje od zera. */
+function mountQuizVersion(id) {
+  const version = QUIZ_VERSIONS.find((v) => v.id === id) || QUIZ_VERSIONS[0];
+  currentQuizVersionId = version.id;
+
+  if (quizEls) {
+    quizEls.grid.innerHTML = "";
+    quizEls.answers = QUIZ_ANSWERS.map((cfg) => {
+      const el = makeQuizAnswer(cfg, version);
+      quizEls.grid.appendChild(el);
+      return el;
+    });
+    startQuestion();
+  }
+
+  document.querySelectorAll("#quiz-switch button").forEach((btn) => {
+    btn.setAttribute("aria-pressed", String(btn.dataset.quiz === version.id));
+  });
+
+  remember(QUIZ_STORAGE_KEY, version.id);
 }
 
 /* --- Skalowanie sceny do okna pod paskiem (proporcje zachowane).
@@ -582,6 +766,16 @@ function buildTopbar() {
     });
     anims.appendChild(btn);
   });
+
+  const quizSwitch = document.getElementById("quiz-switch");
+  QUIZ_VERSIONS.forEach((v) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = v.label;
+    btn.dataset.quiz = v.id;
+    btn.addEventListener("click", () => mountQuizVersion(v.id));
+    quizSwitch.appendChild(btn);
+  });
 }
 
 /* Wariant animacji trzymamy klasą na scenie — przeżywa przebudowę widoku */
@@ -609,6 +803,15 @@ const state = {
   paused: false,
   frozenAt: 0, // od kiedy stoimy (pauza); 0 = idzie
   lives: LIVES.max,
+};
+
+/* Pytanie w quizie — własny zegar faz, pauza wspólna z instruktażem */
+const quiz = {
+  phase: "running", // "running" | "ended" (czas minął, odpowiedzi zablokowane)
+  phaseStart: 0,
+  elapsedInPhase: 0,
+  frozenAt: 0,
+  selected: null, // id wybranej odpowiedzi albo null
 };
 
 /* --- Życia ---
@@ -694,49 +897,114 @@ function setSegmentsProgress(progress) {
   });
 }
 
-function tick(now) {
-  /* Rundy lecą tylko na instruktażu — tablet jest na razie statyczny */
-  if (currentViewId === "instruktaz") {
-    /* Instruktaż to ekran wspólny — utrata żyć przez gracza go nie zatrzymuje
-       („Poczekaj do końca rundy”). Stoi tylko na pauzie: wejście w postój
-       domyka licznik fazy, wyjście przesuwa start, więc czas postoju nie
-       wlicza się do rundy. */
-    const frozen = state.paused;
-    if (frozen && !state.frozenAt) {
-      state.elapsedInPhase += now - state.phaseStart;
-      state.frozenAt = now;
-    } else if (!frozen && state.frozenAt) {
+/* --- Quiz --- */
+function startQuestion() {
+  quiz.phase = "running";
+  quiz.phaseStart = performance.now();
+  quiz.elapsedInPhase = 0;
+  quiz.frozenAt = 0;
+  setSelected(null);
+  setQuizProgress(0);
+}
+
+/* Jedna odpowiedź naraz; do końca czasu można zmienić zdanie.
+   Po czasie przyciski już nie reagują. */
+function selectAnswer(id) {
+  if (!quizEls || quiz.phase !== "running") return;
+  setSelected(id);
+
+  /* Animacja wciśnięcia zawsze od początku — także przy ponownym
+     kliknięciu tej samej odpowiedzi (reflow restartuje @keyframes) */
+  const el = quizEls.answers.find((a) => a.dataset.answer === id);
+  el.classList.remove("pressing");
+  void el.offsetWidth;
+  el.classList.add("pressing");
+}
+
+function setSelected(id) {
+  quiz.selected = id;
+  if (!quizEls) return;
+  quizEls.answers.forEach((el) => {
+    el.setAttribute("aria-pressed", String(el.dataset.answer === id));
+  });
+}
+
+/* Pasek czasu kurczy się do lewej. Gradient liczy się od bieżącej
+   szerokości, więc jasny koniec zostaje na czubku jak dopalający się lont. */
+function setQuizProgress(progress) {
+  if (!quizEls) return;
+  quizEls.bar.style.width = (1 - progress) * 100 + "%";
+  quizEls.bar.style.visibility = progress >= 1 ? "hidden" : "";
+}
+
+/* Zegar fazy z obsługą pauzy: wejście w postój domyka licznik fazy,
+   wyjście przesuwa start, więc czas postoju nie wlicza się do fazy.
+   Zwraca czas od startu fazy albo null, gdy stoimy. */
+function phaseElapsed(clock, now) {
+  const frozen = state.paused;
+  if (frozen && !clock.frozenAt) {
+    clock.elapsedInPhase += now - clock.phaseStart;
+    clock.frozenAt = now;
+  } else if (!frozen && clock.frozenAt) {
+    clock.phaseStart = now;
+    clock.frozenAt = 0;
+  }
+  return frozen ? null : clock.elapsedInPhase + (now - clock.phaseStart);
+}
+
+/* Instruktaż to ekran wspólny — utrata żyć przez gracza go nie zatrzymuje
+   („Poczekaj do końca rundy”). Stoi tylko na pauzie. */
+function tickInstruktaz(now) {
+  const elapsed = phaseElapsed(state, now);
+  if (elapsed === null) return;
+  const round = ROUNDS[state.roundIndex];
+
+  if (state.phase === "running") {
+    const progress = Math.min(elapsed / round.durationMs, 1);
+    setSegmentsProgress(progress);
+    if (progress >= 1) {
+      state.phase = "between";
       state.phaseStart = now;
-      state.frozenAt = 0;
+      state.elapsedInPhase = 0;
     }
-
-    if (!frozen) {
-      const elapsed = state.elapsedInPhase + (now - state.phaseStart);
-      const round = ROUNDS[state.roundIndex];
-
-      if (state.phase === "running") {
-        const progress = Math.min(elapsed / round.durationMs, 1);
-        setSegmentsProgress(progress);
-        if (progress >= 1) {
-          state.phase = "between";
-          state.phaseStart = now;
-          state.elapsedInPhase = 0;
-        }
-      } else if (state.phase === "between") {
-        if (elapsed >= INTER_ROUND_PAUSE_MS) {
-          startRound(state.roundIndex + 1); // po 5. rundzie zapętla od 1.
-        }
-      }
+  } else if (state.phase === "between") {
+    if (elapsed >= INTER_ROUND_PAUSE_MS) {
+      startRound(state.roundIndex + 1); // po 5. rundzie zapętla od 1.
     }
   }
+}
+
+/* Quiz: pełny pasek = cały czas na odpowiedź, potem chwila stanu
+   końcowego i to samo pytanie od nowa (prototyp się zapętla). */
+function tickQuiz(now) {
+  const elapsed = phaseElapsed(quiz, now);
+  if (elapsed === null) return;
+
+  if (quiz.phase === "running") {
+    const progress = Math.min(elapsed / QUIZ.durationMs, 1);
+    setQuizProgress(progress);
+    if (progress >= 1) {
+      quiz.phase = "ended";
+      quiz.phaseStart = now;
+      quiz.elapsedInPhase = 0;
+    }
+  } else if (elapsed >= QUIZ.endHoldMs) {
+    startQuestion();
+  }
+}
+
+function tick(now) {
+  /* Zegar chodzi tylko na widokach, które go mają — tablet z życiami
+     jest statyczny */
+  if (currentViewId === "instruktaz") tickInstruktaz(now);
+  else if (currentViewId === "quiz") tickQuiz(now);
 
   requestAnimationFrame(tick);
 }
 
-/* --- Sterowanie testowe: spacja = pauza, ←/→ = rundy, 0–3 = życia,
-       Z = zła odpowiedź, G = podgląd końca gry, R = restart,
-       1/2/3 = wersja timera (na instruktażu).
-       Rozliczaniem czasu pauzy zajmuje się tick(). --- */
+/* --- Sterowanie testowe: spacja = pauza, ←/→ = rundy, Z = zła odpowiedź,
+       R = restart, cyfry = wersja albo liczba żyć (zależnie od widoku).
+       Rozliczaniem czasu pauzy zajmuje się phaseElapsed(). --- */
 window.addEventListener("keydown", (e) => {
   if (e.target instanceof HTMLSelectElement) return; // nie porywaj klawiszy z selecta
 
@@ -760,9 +1028,10 @@ window.addEventListener("keydown", (e) => {
       state.paused = false;
       setLives(LIVES.max);
       startRound(0);
+      if (currentViewId === "quiz") startQuestion();
       break;
-    /* Cyfry: na instruktażu wersja timera (1–5), na tablecie liczba żyć (0–3).
-       Cyfry spoza zakresu danego ekranu są ignorowane. */
+    /* Cyfry: na instruktażu wersja timera (1–5), na tablecie liczba żyć (0–3),
+       w quizie wersja wciśnięcia (1–2). Cyfry spoza zakresu są ignorowane. */
     case "Digit0":
     case "Digit1":
     case "Digit2":
@@ -772,6 +1041,8 @@ window.addEventListener("keydown", (e) => {
       const n = Number(e.code.slice(5));
       if (currentViewId === "tablet") {
         if (n <= LIVES.max) setLives(n);
+      } else if (currentViewId === "quiz") {
+        if (n >= 1 && QUIZ_VERSIONS[n - 1]) mountQuizVersion(QUIZ_VERSIONS[n - 1].id);
       } else if (n >= 1 && VERSIONS[n - 1]) {
         mountVersion(VERSIONS[n - 1].id);
       }
@@ -799,6 +1070,7 @@ function initialChoice(param, key, allowed, fallback) {
 buildScene();
 buildTopbar();
 currentVersionId = initialChoice("v", STORAGE_KEY, VERSIONS.map((v) => v.id), DEFAULT_VERSION);
+currentQuizVersionId = initialChoice("quiz", QUIZ_STORAGE_KEY, QUIZ_VERSIONS.map((v) => v.id), DEFAULT_QUIZ_VERSION);
 setLifeAnim(initialChoice("anim", ANIM_STORAGE_KEY, LIFE_ANIMS.map((a) => a.id), DEFAULT_ANIM));
 fitScene();
 mountView(initialChoice("view", VIEW_STORAGE_KEY, VIEWS.map((v) => v.id), DEFAULT_VIEW));

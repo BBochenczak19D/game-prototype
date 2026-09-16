@@ -37,6 +37,14 @@
   --seg-on-to: #ceb935;
   --text: #d8ca94;
 
+  /* Cienie kolorowego rdzenia przycisku odpowiedzi — wspólne dla okrągłych
+     przycisków (tablet) i prostokątnych (quiz); w Figmie identyczne.
+     glow = rozmyta poświata, ring = obwódka 6 px (czerwony i zielony) */
+  --answer-shadow-glow: 0 12px 52px 6px rgba(5, 17, 40, 0.6), -2px 2px 32px 6px #030c12;
+  --answer-shadow-ring: 0 12px 52px 6px rgba(5, 17, 40, 0.6), 0 0 0 6px #030512;
+  /* cień turkusowej skorupy wokół rdzenia — też wspólny */
+  --answer-shell-shadow: -5px 6px 42px 2px rgba(5, 19, 22, 0.6), -10px 10px 64px 12px #051114;
+
   /* wysokość paska podglądu nad sceną (poza designem) */
   --header-h: 54px;
 }
@@ -382,8 +390,7 @@ body {
     var(--shell-from) 31.869%,
     var(--shell-to) 82.986%
   );
-  box-shadow: -5px 6px 42px 2px rgba(5, 19, 22, 0.6),
-    -10px 10px 64px 12px #051114;
+  box-shadow: var(--answer-shell-shadow);
 }
 
 /* Rdzeń — jedyna część różniąca kolory; border i gradient z app.js */
@@ -396,14 +403,13 @@ body {
   opacity: 0.9;
   overflow: hidden;
   backdrop-filter: blur(7.5px);
-  box-shadow: 0 12px 52px 6px rgba(5, 17, 40, 0.6),
-    -2px 2px 32px 6px #030c12;
+  box-shadow: var(--answer-shadow-glow);
 }
 
 /* Wariant czerwonego i zielonego: obwódka 6 px zamiast poświaty, bez blura */
 .qbtn-core.ring {
   backdrop-filter: none;
-  box-shadow: 0 12px 52px 6px rgba(5, 17, 40, 0.6), 0 0 0 6px #030512;
+  box-shadow: var(--answer-shadow-ring);
 }
 
 /* ============================================================
@@ -623,7 +629,8 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .life.losing,
   .life.losing .life-full,
-  .life.losing::before {
+  .life.losing::before,
+  .qa.pressing .qa-core {
     animation-duration: 1ms !important;
   }
 }
@@ -697,4 +704,243 @@ body {
   line-height: 1.5;
   color: var(--text);
   user-select: none;
+}
+
+/* ============================================================
+   QUIZ (drugi tryb tabletu gracza)
+   Figma: plik UCzHnyMnTZ2AS0PnYsw6eR, node 2168-692
+   („Quiz/Pytanie i odpowiedzi”); stany wciśnięte przycisków:
+   2169-740 / 742 / 744 / 773. Geometria i cienie 1:1 z Dev Mode.
+
+   Uwaga na środek: ta ramka ma w Figmie 2869.75×1768.67 (tło w niej
+   ma pełne 2880×1800), a elementy „na środku” liczą się od środka
+   ramki — x 1435, nie 1440 jak na scenie. Trzymamy pozycje z Figmy.
+   ============================================================ */
+
+/* Punkty (node 2168-702) i pytanie (node 2168-703): Noto Sans Medium,
+   beige/500, wyśrodkowane na x 1435.
+   font-smoothing: Chrome na macOS domyślnie pogrubia jasny tekst na
+   ciemnym tle — bez tego litery wychodzą wyraźnie grubsze niż w Figmie
+   (sprawdzone nakładką różnicową z renderem Figmy). */
+.quiz-points,
+.quiz-question {
+  position: absolute;
+  left: 1435px;
+  transform: translate(-50%, -50%);
+  font-family: "Noto Sans", system-ui, sans-serif;
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+  color: var(--text);
+  text-align: center;
+  user-select: none;
+}
+
+.quiz-points {
+  top: 91px;
+  font-size: 72px;
+  white-space: nowrap;
+}
+
+/* Pole pytania 2400×384 ze środkiem na y 393.26, tekst wyśrodkowany w pionie */
+.quiz-question {
+  top: 393.26px;
+  width: 2400px;
+  height: 384px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 90px;
+}
+
+/* Siatka odpowiedzi (Frame 2168-694): x 247, y 747, dwa rzędy po dwa
+   przyciski; 128 px odstępu w poziomie, 80 px w pionie */
+.quiz-answers {
+  position: absolute;
+  left: 247px;
+  top: 747px;
+  display: grid;
+  grid-template-columns: repeat(2, 1134px);
+  gap: 80px 128px;
+}
+
+/* Quiz/button-types 1134×382 — cały przycisk jest klikalny.
+   Zdejmujemy domyślny wygląd <button>. */
+.qa {
+  display: flex;
+  width: 1134px;
+  height: 382px;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.qa:focus {
+  outline: none;
+}
+
+/* Obwódka fokusu tylko przy obsłudze klawiaturą — poza designem */
+.qa:focus-visible .qa-shell {
+  outline: 6px solid var(--text);
+  outline-offset: 10px;
+}
+
+/* Uwaga do obrysów: eksport CSS z Dev Mode podaje tu tylko pierwszy kolor
+   gradientowych obrysów i gubi minus przy ujemnych punktach gradientów.
+   Wartości poniżej są przeliczone wprost z węzłów Figmy (gradientTransform),
+   razem z wyrównaniem obrysów (inside / outside). */
+
+/* QUIZ/button — turkusowa skorupa 1134×382: te same tokeny i cień co
+   w okrągłych przyciskach, ale zaokrąglenie 42 px. Obrys 2 px leży
+   w środku, nie zabiera miejsca i przechodzi od ciemnego do złotego —
+   rysuje go ::before (gradient z przezroczystością nie da się borderem). */
+.qa-shell {
+  position: relative;
+  flex: 1;
+  display: flex;
+  padding: 10px; /* ramka rdzenia leży na 16 px, jej obrys wystaje o 6 px */
+  border-radius: 42px;
+  background-image: linear-gradient(
+    26.878deg,
+    var(--shell-from) 31.869%,
+    var(--shell-to) 82.986%
+  );
+  box-shadow: var(--answer-shell-shadow);
+}
+
+.qa-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  border-radius: inherit;
+  background: linear-gradient(3.213deg, #040b0c 2.37%, rgba(205, 143, 29, 0.52) 119.88%);
+  /* zostawia widoczny tylko pas 2 px przy krawędzi */
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Rdzeń = ramka 1102×350 z Figmy plus obrys 6 px NA ZEWNĄTRZ, czyli
+   1114×362 i zaokrąglenie 32 + 6. Krycie 90 % obejmuje naraz obie twarze,
+   obrysy i cienie — tak jak krycie warstwy w Figmie. */
+.qa-core {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px 38px; /* padding ramki 16 / 32 + obrys 6 */
+  border-radius: 38px;
+  opacity: 0.9;
+  backdrop-filter: blur(7.5px);
+  box-shadow: var(--answer-shadow-glow);
+}
+
+/* Czerwony i zielony: obwódka 6 px zamiast poświaty, bez blura */
+.qa-core.ring {
+  backdrop-filter: none;
+  box-shadow: var(--answer-shadow-ring);
+}
+
+/* Twarz przycisku: wypełnienie w ramce (padding-box) i obrys w pasie 6 px
+   dookoła (border-box). Obrazy wstawia app.js zależnie od wersji, więc te
+   reguły nie wiedzą, która twarz jest jasna, a która ciemna. Wciśnięta
+   leży na domyślnej i wchodzi przejściem krycia. */
+.qa-face {
+  position: absolute;
+  inset: 0;
+  border: 6px solid transparent;
+  border-radius: inherit;
+  background: var(--qa-fill) padding-box, var(--qa-stroke) border-box;
+}
+
+.qa-face-pressed {
+  background: var(--qa-fill-pressed) padding-box, var(--qa-stroke-pressed) border-box;
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+}
+
+.qa[aria-pressed="true"] .qa-face-pressed {
+  opacity: 1;
+}
+
+/* Tekst odpowiedzi: Noto Sans Medium 80 px, nad obiema twarzami */
+.qa-text {
+  position: relative;
+  flex: 1;
+  font-family: "Noto Sans", system-ui, sans-serif;
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased; /* jak w pytaniu, patrz wyżej */
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 80px;
+  line-height: normal;
+  letter-spacing: 0.8px;
+  color: #fff8de;
+  text-align: center;
+  overflow-wrap: break-word;
+  user-select: none;
+}
+
+/* Animacja wciśnięcia — autorska, w Figmie są tylko stany przed i po.
+   Kolorowy rdzeń zapada się w turkusową obudowę i odbija; w tym samym
+   czasie twarz przechodzi we wciśniętą (przejścia krycia i borderu wyżej). */
+.qa.pressing .qa-core {
+  animation: qa-press 340ms cubic-bezier(0.3, 0, 0.3, 1);
+}
+
+@keyframes qa-press {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(0.95); }
+  65%  { transform: scale(1.01); }
+  100% { transform: scale(1); }
+}
+
+/* Pasek czasu (Timer bar, node 2168-701): 1424×45 na (723, 1690).
+   W komponencie siedzi jeszcze napis „0:30”, ale przy tej wysokości pasek
+   go ucina i na designie go nie widać — dlatego go tu nie ma.
+   Obrys 2 px leży w środku i nie zabiera miejsca (wypełnienie ma w Figmie
+   1400×21 na 12,12). To gradient od yellow/960 do yellow/400, więc zamiast
+   koloru borderu dostaje własną warstwę tła widoczną tylko pod borderem;
+   tło turkusowe liczy się od całego paska i jest przycięte do środka. */
+.quiz-timer {
+  position: absolute;
+  left: 1435px;
+  top: 1690px;
+  transform: translateX(-50%);
+  width: 1424px;
+  height: 45px;
+  padding: 10px; /* 12 − obrys 2 */
+  border: 2px solid transparent;
+  border-radius: 42px;
+  overflow: hidden;
+  background:
+    linear-gradient(2.722deg, #051819 31.87%, #062123 82.99%) border-box padding-box,
+    linear-gradient(1.589deg, #141302 44.75%, #f6e472 95.71%) border-box;
+  box-shadow: -5px 6px 4px 0 #061015, -10px 10px 52px 0 #051114;
+}
+
+/* Wypełnienie: jasny koniec gradientu po prawej. Szerokość zmienia app.js,
+   a gradient liczy się od bieżącej szerokości — jasny czubek jedzie razem
+   z końcem paska. */
+.quiz-timer-fill {
+  width: 100%;
+  height: 100%;
+  border: 3px solid rgba(9, 43, 49, 0.86);
+  border-radius: 24px;
+  opacity: 0.8;
+  background-image: linear-gradient(
+    269.943deg,
+    #f6e472 3.98%, /* yellow/400 */
+    #5c500a 81.39% /* yellow/800 */
+  );
+  background-origin: border-box;
+  box-shadow: 0 12px 24px 12px #051a1f;
 }

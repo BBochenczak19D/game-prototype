@@ -4,12 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quizsteries — prototyp</title>
+  <!-- Noto Sans Medium — font widoku quizu (Caudex leży lokalnie w assets/fonts) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@500&display=swap" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <!--
-    Prototyp gry „Quizsteries”. Dwa ekrany przełączane w pasku u góry:
-    INSTRUKTAŻ (ekran wspólny) i TABLET GRACZA. W realnej rozgrywce lecą
+    Prototyp gry „Quizsteries”. Ekrany przełączane w pasku u góry:
+    INSTRUKTAŻ (ekran wspólny) i TABLET GRACZA w dwóch trybach — gra
+    z życiami oraz QUIZ. Instruktaż i tablet w realnej rozgrywce lecą
     równocześnie na dwóch różnych ekranach.
 
     Scena ma stałe wymiary (px z Figmy) i jest skalowana do okna przez
@@ -35,6 +40,10 @@
       </div>
       <span>animacja</span>
       <div id="anim-switch" class="switch" role="group" aria-label="Wariant animacji utraty życia"></div>
+    </div>
+
+    <div id="ctrl-quiz" class="topbar-group">
+      <div id="quiz-switch" class="switch" role="group" aria-label="Wersja animacji wciśnięcia"></div>
     </div>
 
     <span class="topbar-hint" id="topbar-hint"></span>

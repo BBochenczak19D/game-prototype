@@ -3,18 +3,22 @@
 Prototyp gry-konkursu „Quizsteries". Czysty HTML + CSS + JS, bez build-stepa —
 wystarczy otworzyć `index.html` w przeglądarce.
 
-## Dwa ekrany
+## Ekrany
 
-W realnej rozgrywce lecą **równocześnie na dwóch różnych ekranach**; tutaj
-przełącza się je selectem w pasku u góry (pasek nie jest częścią designu).
+Instruktaż i tablet w realnej rozgrywce lecą **równocześnie na dwóch różnych
+ekranach**; tutaj przełącza się je selectem w pasku u góry (pasek nie jest
+częścią designu). Tablet gracza ma dwa tryby gry, więc w selekcie są trzy
+pozycje.
 
-| Ekran | Co pokazuje |
+| Widok | Co pokazuje |
 | --- | --- |
 | **Instruktaż** | ekran wspólny: treść zadania + timer rundy |
-| **Tablet gracza** | ekran w rękach gracza: punkty, 4 przyciski odpowiedzi, panel żyć |
+| **Tablet gracza** | ekran w rękach gracza: punkty, 4 okrągłe przyciski, panel żyć |
+| **Tablet gracza · quiz** | pytanie, 4 odpowiedzi 2×2 z animacją wciśnięcia, pasek czasu |
 
 Można wysłać link prosto do jednego ekranu, dopisując `?view=` do adresu:
-`?view=instruktaz`, `?view=tablet`. Wybór zapamiętuje się w przeglądarce.
+`?view=instruktaz`, `?view=tablet`, `?view=quiz`. Wybór zapamiętuje się
+w przeglądarce.
 
 ## Ekran: Instruktaż
 
@@ -78,14 +82,50 @@ w adresie: `?anim=` z `drain`, `burnout`, `wobble`, `flip`. Domyślny:
 Przyciski `3 / 2 / 1 / 0` skaczą wprost do stanu, bez animacji — animację
 odpala utrata pojedynczego życia (`−1 życie` albo klawisz `Z`).
 
+## Ekran: Tablet gracza · quiz
+
+Pytanie na górze, cztery odpowiedzi w siatce 2×2 i pasek czasu na dole.
+Gracz ma **10 sekund** na odpowiedź:
+
+- kliknięcie (dotknięcie) przycisku zaznacza odpowiedź — przycisk przechodzi
+  w stan wciśnięty; zaznaczona może być tylko jedna,
+- do końca czasu można zmienić zdanie i kliknąć inną,
+- pasek czasu kurczy się od prawej do lewej; gdy zniknie, odpowiedzi są
+  zablokowane,
+- po 1,5 s stanu końcowego to samo pytanie startuje od nowa (prototyp się
+  zapętla).
+
+Czas, przerwa na końcu, treść pytania i odpowiedzi siedzą w `QUIZ`
+i `QUIZ_ANSWERS` w `app.js`.
+
+### Dwie wersje animacji wciśnięcia
+
+Każdy przycisk ma w Figmie dwie „twarze”: **jasną** (pełny kolor, tak jak na
+ekranie quizu) i **ciemną** (gradient — osobne komponenty stanów wciśniętych).
+
+| Wersja | Na starcie | Po wciśnięciu |
+| --- | --- | --- |
+| **V1 · wciśnięcie przyciemnia** | jasne, jak na ekranie z Figmy | wybrany ciemnieje |
+| **V2 · wciśnięcie rozjaśnia** | ciemne | wybrany się rozjaśnia |
+
+Ruch jest w obu wersjach identyczny, różni je tylko to, która twarz jest
+domyślna. Kolorowy rdzeń zapada się w turkusową obudowę (do 95 %), odbija
+i wraca do rozmiaru (340 ms), a w tym samym czasie twarz płynnie przechodzi
+w drugą (200 ms). Animacja jest autorska — w Figmie są tylko stany przed
+i po.
+
+Wersja przełącza się w pasku, klawiszami `1` / `2` albo w adresie:
+`?view=quiz&quiz=v1`, `?view=quiz&quiz=v2`.
+
 ## Sterowanie (testowe)
 
 | Klawisz | Akcja |
 | --- | --- |
-| `Spacja` | pauza / wznowienie (instruktaż) |
+| `Spacja` | pauza / wznowienie (instruktaż i quiz) |
 | `→` / `←` | następna / poprzednia runda |
-| `R` | restart: runda 1 i pełne życia |
+| `R` | restart: runda 1 i pełne życia; w quizie pytanie od nowa |
 | `1`–`5` | wersja timera (na instruktażu) |
+| `1` / `2` | wersja animacji wciśnięcia (w quizie) |
 | `0`–`3` | skok wprost do stanu żyć (na tablecie, bez animacji) |
 | `Z` | zła odpowiedź — jedno życie mniej, z animacją |
 
@@ -99,6 +139,8 @@ odpala utrata pojedynczego życia (`−1 życie` albo klawisz `Z`).
   segment dostaje `threshold` — ułamek czasu rundy, po którym się zapala.
   To jedyne, co odróżnia trzy wersje timera od siebie.
 - 5 rund (tekst + motyw + czas trwania) zapętlonych; konfiguracja w `ROUNDS`.
+- Instruktaż i quiz mają osobne zegary faz, liczone jedną funkcją
+  (`phaseElapsed`) — pauza spacją działa w obu i czas postoju się nie wlicza.
 - 5 motywów kolorystycznych w `THEMES` — zmiana koloru całego widoku to
   podmiana jednego obiektu; kolory idą przez zmienne CSS.
 
@@ -121,8 +163,40 @@ w `assets/`:
   na 40 % krycia, pusty kryształ (`life-empty.svg`, node `1936-11886`)
   i komunikat (Frame 165) 1772×360 na środku sceny.
 
-Animacje utraty życia są autorskie — w Figmie ich nie ma, jest tylko stan
-przed i po.
+- **Tablet gracza · quiz** — ten sam plik, node `2168-692` („Quiz/Pytanie
+  i odpowiedzi”): tło `bg-quiz.png`, punkty i pytanie w Noto Sans Medium,
+  siatka odpowiedzi 2 × 1134×382 na (247, 747), pasek czasu 1424×45 na
+  (723, 1690). Stany wciśnięte przycisków: node'y `2169-740` (czerwony),
+  `2169-742` (żółty), `2169-744` (niebieski), `2169-773` (zielony).
+
+Animacje utraty życia i wciśnięcia odpowiedzi są autorskie — w Figmie ich
+nie ma, są tylko stany przed i po.
+
+### Quiz — na co uważać przy kolejnych designach
+
+Przy quizie sama zakładka Dev Mode (eksport CSS) okazała się niepełna.
+Wartości w repo są sprawdzone bezpośrednio na węzłach Figmy i nałożeniem
+renderu z Figmy na prototyp:
+
+- **Ramka ma 2869,75×1768,67**, a nie 2880×1800 (tło w niej ma pełne
+  2880×1800). Elementy „na środku” liczą się od środka ramki, więc stoją na
+  x 1435, a nie 1440 — prototyp trzyma pozycje z Figmy.
+- **Obrysy rdzeni przycisków leżą na zewnątrz** ramki (6 px), a obrysy
+  skorupy i paska czasu w środku; żaden nie zajmuje miejsca w układzie.
+- **Obrysy są gradientami** (skorupa: od ciemnego do złotego, pasek czasu:
+  od ciemnego do żółtego, wciśnięte przyciski: od koloru do prawie
+  czarnego) — eksport podaje tylko ich pierwszy kolor.
+- **Gradienty wypełnień wciśniętych przycisków** mają ujemny pierwszy punkt
+  (np. `-61.87%`), a eksport gubi minus — przyciski wychodziły przez to
+  ciemniejsze niż w Figmie.
+- **Cienie skorupy** mają spread 2 i 12 px (eksport podaje 0).
+- Tekst quizu ma `-webkit-font-smoothing: antialiased` — bez tego Chrome na
+  macOS rysuje jasne litery na ciemnym tle wyraźnie grubiej niż Figma.
+
+**Font:** Noto Sans Medium ładuje się z Google Fonts (link w `index.html`),
+więc do poprawnego wyglądu quizu potrzebny jest internet — bez niego
+przeglądarka podstawi zwykły systemowy font. Caudex leży lokalnie
+w `assets/fonts/`.
 
 Uwaga: tła i narożniki mają kolory wypalone w assetach — motywy (`THEMES`
 w `app.js`) sterują segmentami, panelem i tekstem. Motyw 1 („yellow") jest
