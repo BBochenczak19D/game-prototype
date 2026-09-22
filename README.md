@@ -121,12 +121,14 @@ Twarze przycisków siedzą w `QUIZ_ANSWERS` w `app.js`:
 Etykiety w pasku są skrócone, żeby pasek się mieścił — pełny opis wersji
 pokazuje się w dymku po najechaniu na przycisk.
 
-Ruch jest we wszystkich wersjach identyczny. Kolorowy rdzeń zapada się
-w turkusową obudowę (do 95 %) i odbija (340 ms), twarz płynnie przechodzi
-w wciśniętą (200 ms), a cały przycisk zjeżdża do 97,5 % rozmiaru i **przy nim
-zostaje**, dopóki odpowiedź jest wybrana — dzięki temu po siatce widać, który
-przycisk jest wciśnięty. Animacja jest autorska, w Figmie są tylko stany
-przed i po.
+Ruch jest we wszystkich wersjach identyczny i jest to **jeden gest**: cały
+przycisk zjeżdża do 95 % rozmiaru, a w tym samym czasie i tą samą krzywą
+twarz przechodzi we wciśniętą (180 ms, bez odbicia). Obudowa i kolorowy
+rdzeń skalują się razem, bo skalowany jest cały przycisk — rdzeń nie ma
+własnej animacji. Zmniejszenie **zostaje**, dopóki odpowiedź jest wybrana,
+więc po siatce widać, który przycisk jest wciśnięty. Czas i krzywą trzyma
+jedna zmienna `--qa-press` w `styles.css`. Animacja jest autorska, w Figmie
+są tylko stany przed i po.
 
 Wersja przełącza się w pasku, klawiszami `1`–`3` albo w adresie:
 `?view=quiz&quiz=v1.2`, `…&quiz=v1.3`, `…&quiz=v2`. Domyślna to V1.2.

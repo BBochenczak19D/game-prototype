@@ -605,9 +605,6 @@ function makeQuizAnswer(cfg, version) {
   btn.addEventListener("click", (e) => {
     if (e.detail === 0) selectAnswer(cfg.id);
   });
-  btn.addEventListener("animationend", (e) => {
-    if (e.animationName === "qa-press") btn.classList.remove("pressing");
-  });
   return btn;
 }
 
@@ -956,13 +953,8 @@ function startQuestion() {
 function selectAnswer(id) {
   if (!quizEls || quiz.phase !== "running") return;
   setSelected(id);
-
-  /* Animacja wciśnięcia zawsze od początku — także przy ponownym
-     kliknięciu tej samej odpowiedzi (reflow restartuje @keyframes) */
-  const el = quizEls.answers.find((a) => a.dataset.answer === id);
-  el.classList.remove("pressing");
-  void el.offsetWidth;
-  el.classList.add("pressing");
+  /* Całą animację wciśnięcia robią przejścia CSS na przycisku
+     (zmniejszenie i zmiana twarzy) — tu wystarczy zmiana stanu. */
 }
 
 function setSelected(id) {
