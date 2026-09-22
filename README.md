@@ -106,7 +106,7 @@ różnią się tylko jasnością stanu domyślnego; wciśnięty jest wszędzie t
 | Wersja | Na starcie | Po wciśnięciu |
 | --- | --- | --- |
 | **V1.2 · jasne domyślne** | `light` | `darker` |
-| **V1.3 · średnie domyślne** | `lightGradient` | `darker` |
+| **V1.3 · średnie domyślne** | `lightGradient` | `darkest` |
 | **V2 · ciemne domyślne** | `dark` | `darker` |
 
 Twarze przycisków siedzą w `QUIZ_ANSWERS` w `app.js`:
@@ -117,6 +117,11 @@ Twarze przycisków siedzą w `QUIZ_ANSWERS` w `app.js`:
 | `lightGradient` | drugi plik, node `15-148` | gradient przesunięty ku jaśniejszym |
 | `dark` | node'y `2169-740` i dalsze | ciemny gradient |
 | `darker` | drugi plik, node `15-115` | ciemniejszy gradient, ciemniejsze obrysy |
+| `darkest` | drugi plik, node `19-169` | poprawiony, jeszcze ciemniejszy wciśnięty |
+
+`darkest` różni się od `darker` tylko wypełnieniami czerwonego, żółtego
+i zielonego — obrysy są te same, a niebieski w nowym designie wyszedł
+identycznie jak wcześniej.
 
 Etykiety w pasku są skrócone, żeby pasek się mieścił — pełny opis wersji
 pokazuje się w dymku po najechaniu na przycisk.

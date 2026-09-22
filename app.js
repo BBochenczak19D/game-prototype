@@ -166,14 +166,18 @@ const QUIZ = {
 };
 
 /* Odpowiedzi w kolejności siatki: górny rząd L→P, dolny rząd L→P.
-   Każdy kolor ma cztery twarze, od najjaśniejszej do najciemniejszej:
+   Każdy kolor ma pięć twarzy, od najjaśniejszej do najciemniejszej:
    – light     = jasna, jak na ekranie 2168-692 (pełny kolor, jasny obrys),
    – lightGradient = jaśniejsza domyślna z drugiego pliku Figmy
                  (feDfMhqinxZSqSzWsB7qFF, node 15-148) — gradient w tych
                  samych barwach co `dark`, tylko przesunięty ku jaśniejszym,
    – dark      = ciemna, jak w osobnych node'ach wciśniętych (gradienty),
    – darker    = ciemniejszy wariant wciśniętego z drugiego pliku Figmy
-                 (node 15-115) — ta sama geometria, ciemniejsze gradienty.
+                 (node 15-115) — ta sama geometria, ciemniejsze gradienty,
+   – darkest   = jeszcze ciemniejszy wciśnięty (node 19-169) — poprawiony
+                 design; obrysy te same co w `darker`, ciemniejsze są
+                 wypełnienia czerwonego, żółtego i zielonego (niebieski
+                 wyszedł identycznie jak w `darker`).
    Która twarz jest domyślna, a która wciśnięta, decyduje wersja (QUIZ_VERSIONS).
    fill = wypełnienie ramki, stroke = obrys 6 px na zewnątrz; kolor albo
    gradient CSS. Gradienty ciemnych twarzy są przeliczone wprost z węzłów
@@ -197,6 +201,10 @@ const QUIZ_ANSWERS = [
       fill: "linear-gradient(0.362deg, #3c0707 -29%, #230606 150.01%)", // red/900 → red/950
       stroke: "linear-gradient(161.069deg, #8f1616 16.61%, #210405 53.21%)", // red/700 → ciemny
     },
+    darkest: {
+      fill: "linear-gradient(0.576deg, #3c0707 -120.19%, #230606 98.41%)", // red/900 → red/950
+      stroke: "linear-gradient(161.069deg, #8f1616 16.61%, #210405 53.21%)", // jak w `darker`
+    },
   },
   {
     id: "yellow", text: "Odpowiedź", ring: false,
@@ -212,6 +220,10 @@ const QUIZ_ANSWERS = [
     darker: {
       fill: "linear-gradient(180deg, #1a1804 -27.86%, #5c500a 225.14%)", // yellow/900 → yellow/800
       stroke: "linear-gradient(151.48deg, #76670c 5.57%, #1a1804 57.39%)", // yellow/700 → yellow/900
+    },
+    darkest: {
+      fill: "linear-gradient(180.278deg, #141302 -15.97%, #383106 186.94%)", // yellow/960 → ciemna oliwka
+      stroke: "linear-gradient(151.48deg, #76670c 5.57%, #1a1804 57.39%)", // jak w `darker`
     },
   },
   {
@@ -229,6 +241,11 @@ const QUIZ_ANSWERS = [
       fill: "linear-gradient(360deg, #0e0f4a -41.57%, #060c23 130.57%)", // dark-blue/700 → dark-blue/800
       stroke: "linear-gradient(180.169deg, #113aa2 -33.03%, #060c23 66.81%)", // dark-blue/600 → dark-blue/800
     },
+    darkest: {
+      /* niebieski jest w nowym designie taki sam jak w `darker` */
+      fill: "linear-gradient(360deg, #0e0f4a -41.57%, #060c23 130.57%)", // dark-blue/700 → dark-blue/800
+      stroke: "linear-gradient(180.169deg, #113aa2 -33.03%, #060c23 66.81%)",
+    },
   },
   {
     id: "green", text: "Odpowiedź", ring: true,
@@ -245,6 +262,10 @@ const QUIZ_ANSWERS = [
       fill: "linear-gradient(178.169deg, #0d2805 -5.6%, #086318 236.91%)", // green/900 → green/800
       stroke: "linear-gradient(169.834deg, #19980e 9.24%, #042108 55.84%)", // green/700 → ciemny
     },
+    darkest: {
+      fill: "linear-gradient(181.247deg, #021605 5.28%, #0d2805 129.84%)", // green/950 → green/900
+      stroke: "linear-gradient(169.834deg, #19980e 9.24%, #042108 55.84%)", // jak w `darker`
+    },
   },
 ];
 
@@ -255,8 +276,8 @@ const QUIZ_ANSWERS = [
 const QUIZ_VERSIONS = [
   { id: "v1.2", label: "V1.2 · jasne domyślne", idle: "light", pressed: "darker",
     title: "Domyślne pełne jasne (ekran quizu), wciśnięty ciemniejszy (node 15-115)" },
-  { id: "v1.3", label: "V1.3 · średnie domyślne", idle: "lightGradient", pressed: "darker",
-    title: "Domyślne jaśniejszy gradient (node 15-148), wciśnięty ciemniejszy (node 15-115)" },
+  { id: "v1.3", label: "V1.3 · średnie domyślne", idle: "lightGradient", pressed: "darkest",
+    title: "Domyślne jaśniejszy gradient (node 15-148), wciśnięty najciemniejszy (node 19-169)" },
   { id: "v2", label: "V2 · ciemne domyślne", idle: "dark", pressed: "darker",
     title: "Domyślne ciemny gradient, wciśnięty jeszcze ciemniejszy (node 15-115)" },
 ];
