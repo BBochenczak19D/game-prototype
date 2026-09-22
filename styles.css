@@ -793,7 +793,7 @@ body {
    obudowa i kolorowy rdzeń jadą razem (rdzeń nie ma własnej animacji),
    a siatka stoi w miejscu. */
 .qa[aria-pressed="true"] {
-  transform: scale(0.95);
+  transform: scale(0.97);
 }
 
 .qa:focus {

@@ -122,7 +122,7 @@ Etykiety w pasku są skrócone, żeby pasek się mieścił — pełny opis wersj
 pokazuje się w dymku po najechaniu na przycisk.
 
 Ruch jest we wszystkich wersjach identyczny i jest to **jeden gest**: cały
-przycisk zjeżdża do 95 % rozmiaru, a w tym samym czasie i tą samą krzywą
+przycisk zjeżdża do 97 % rozmiaru, a w tym samym czasie i tą samą krzywą
 twarz przechodzi we wciśniętą (180 ms, bez odbicia). Obudowa i kolorowy
 rdzeń skalują się razem, bo skalowany jest cały przycisk — rdzeń nie ma
 własnej animacji. Zmniejszenie **zostaje**, dopóki odpowiedź jest wybrana,
