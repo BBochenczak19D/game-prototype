@@ -166,10 +166,21 @@ const QUIZ = {
 };
 
 /* Odpowiedzi w kolejności siatki: górny rząd L→P, dolny rząd L→P.
-   Każdy kolor ma w Figmie dwie twarze:
-   – light = jasna, jak na ekranie 2168-692 (pełny kolor, jasny obrys),
-   – dark  = ciemna, jak w osobnych node'ach wciśniętych (gradienty).
-   Która jest domyślna, a która wciśnięta, decyduje wersja (QUIZ_VERSIONS).
+   Każdy kolor ma pięć twarzy, od najjaśniejszej do najciemniejszej:
+   – light     = jasna, jak na ekranie 2168-692 (pełny kolor, jasny obrys),
+   – lightGradient = jaśniejsza domyślna z drugiego pliku Figmy
+                 (feDfMhqinxZSqSzWsB7qFF, node 15-148) — gradient w tych
+                 samych barwach co `dark`, tylko przesunięty ku jaśniejszym,
+   – dark      = ciemna, jak w osobnych node'ach wciśniętych (gradienty),
+   – darker    = ciemniejszy wariant wciśniętego z drugiego pliku Figmy
+                 (node 15-115) — ta sama geometria, ciemniejsze gradienty,
+   – darkSolid = ciemna jednolita (bez gradientu) do wersji z mocniejszym
+                 kontrastem. Tej nie ma w Figmie: to ta sama barwa co jasna
+                 twarz, przyciemniona tak, żeby wszystkie cztery miały równą
+                 jasność (OKLCH L 0.25, obrys L 0.36). Paleta pliku nie ma
+                 pasujących stopni — dostępne są albo prawie czarne
+                 (red/950, dark-blue/800…), albo za mało kontrastowe.
+   Która twarz jest domyślna, a która wciśnięta, decyduje wersja (QUIZ_VERSIONS).
    fill = wypełnienie ramki, stroke = obrys 6 px na zewnątrz; kolor albo
    gradient CSS. Gradienty ciemnych twarzy są przeliczone wprost z węzłów
    Figmy — eksport z Dev Mode gubi w nich minus i podaje tylko pierwszy
@@ -180,43 +191,88 @@ const QUIZ_ANSWERS = [
   {
     id: "red", text: "Odpowiedź", ring: true,
     light: { fill: "#b11719", stroke: "#f64949" }, // red/600, red/400
+    lightGradient: {
+      fill: "linear-gradient(3.371deg, #8f1616 -17.57%, #230606 158.65%)", // red/700 → red/950
+      stroke: "linear-gradient(161.069deg, #b11719 16.61%, #210405 53.21%)", // red/600 → ciemny
+    },
     dark: {
       fill: "linear-gradient(0.362deg, #8f1616 -29%, #230606 150.01%)", // red/700 → red/950
       stroke: "linear-gradient(161.069deg, #b11719 16.61%, #210405 53.21%)",
     },
+    darker: {
+      fill: "linear-gradient(0.362deg, #3c0707 -29%, #230606 150.01%)", // red/900 → red/950
+      stroke: "linear-gradient(161.069deg, #8f1616 16.61%, #210405 53.21%)", // red/700 → ciemny
+    },
+    darkSolid: { fill: "#420907", stroke: "#711614" },
   },
   {
     id: "yellow", text: "Odpowiedź", ring: false,
     light: { fill: "#a89311", stroke: "#f6e472" }, // yellow/600, yellow/400
+    lightGradient: {
+      fill: "linear-gradient(180deg, #1a1804 -92.71%, #76670c 100%)", // yellow/900 → yellow/700
+      stroke: "linear-gradient(151.48deg, #ceb935 5.57%, #1a1804 57.39%)", // yellow/500 → yellow/900
+    },
     dark: {
       fill: "linear-gradient(180deg, #1a1804 -27.86%, #76670c 126%)", // yellow/900 → yellow/700
       stroke: "linear-gradient(151.48deg, #ceb935 5.57%, #1a1804 57.39%)", // yellow/500 → yellow/900
     },
+    darker: {
+      fill: "linear-gradient(180deg, #1a1804 -27.86%, #5c500a 225.14%)", // yellow/900 → yellow/800
+      stroke: "linear-gradient(151.48deg, #76670c 5.57%, #1a1804 57.39%)", // yellow/700 → yellow/900
+    },
+    darkSolid: { fill: "#272206", stroke: "#463d10" },
   },
   {
     id: "blue", text: "Odpowiedź", ring: false,
     light: { fill: "#1e57e6", stroke: "#4d80ff" }, // dark-blue/500, dark-blue/400
+    lightGradient: {
+      fill: "linear-gradient(0.231deg, #113aa2 -9.25%, #060c23 189.65%)", // dark-blue/600 → dark-blue/800
+      stroke: "linear-gradient(180.169deg, #1e57e6 -33.03%, #060c23 66.81%)", // dark-blue/500 → dark-blue/800
+    },
     dark: {
       fill: "linear-gradient(0.231deg, #113aa2 -40.42%, #060c23 129.56%)", // dark-blue/600 → dark-blue/800
       stroke: "linear-gradient(180.169deg, #1e57e6 -33.03%, #060c23 66.81%)", // dark-blue/500 → dark-blue/800
     },
+    darker: {
+      fill: "linear-gradient(360deg, #0e0f4a -41.57%, #060c23 130.57%)", // dark-blue/700 → dark-blue/800
+      stroke: "linear-gradient(180.169deg, #113aa2 -33.03%, #060c23 66.81%)", // dark-blue/600 → dark-blue/800
+    },
+    darkSolid: { fill: "#031958", stroke: "#093093" },
   },
   {
     id: "green", text: "Odpowiedź", ring: true,
     light: { fill: "#19980e", stroke: "#53f653" }, // green/700, green/400
+    lightGradient: {
+      fill: "linear-gradient(180.099deg, #0d2805 -97.61%, #19980e 132.69%)", // green/900 → green/700
+      stroke: "linear-gradient(169.834deg, #0fcd4e 9.24%, #042108 55.84%)",
+    },
     dark: {
       fill: "linear-gradient(180.099deg, #0d2805 -61.87%, #19980e 149.03%)", // green/900 → green/700
       stroke: "linear-gradient(169.834deg, #0fcd4e 9.24%, #042108 55.84%)",
     },
+    darker: {
+      fill: "linear-gradient(178.169deg, #0d2805 -5.6%, #086318 236.91%)", // green/900 → green/800
+      stroke: "linear-gradient(169.834deg, #19980e 9.24%, #042108 55.84%)", // green/700 → ciemny
+    },
+    darkSolid: { fill: "#082a06", stroke: "#154a11" },
   },
 ];
 
-/* Dwie wersje do porównania (przełącznik w pasku nad sceną).
-   Ruch wciśnięcia jest w obu identyczny — różni je tylko to, która
-   twarz przycisku jest domyślna, a która pojawia się po wciśnięciu. */
+/* Wersje do porównania (przełącznik w pasku nad sceną).
+   Ruch wciśnięcia jest we wszystkich identyczny — różni je tylko to, która
+   twarz przycisku (klucz z QUIZ_ANSWERS) jest domyślna, a która pojawia się
+   po wciśnięciu. */
 const QUIZ_VERSIONS = [
-  { id: "v1", label: "V1 · wciśnięcie przyciemnia", invert: false }, // jak w Figmie: jasne → ciemne
-  { id: "v2", label: "V2 · wciśnięcie rozjaśnia", invert: true },    // na odwrót: ciemne → jasne
+  { id: "v1", label: "V1 · przyciemnia", idle: "light", pressed: "dark",
+    title: "Domyślne jasne, wciśnięty ciemnieje — jak na ekranie w Figmie" },
+  { id: "v1.2", label: "V1.2 · ciemniejszy", idle: "light", pressed: "darker",
+    title: "Jak V1, ale wciśnięty jest ciemniejszy (node 15-115)" },
+  { id: "v1.3", label: "V1.3 · jaśniejsze", idle: "lightGradient", pressed: "darker",
+    title: "Jaśniejsze domyślne (node 15-148) + ciemniejszy wciśnięty (node 15-115)" },
+  { id: "v2", label: "V2 · rozjaśnia", idle: "dark", pressed: "light",
+    title: "Na odwrót: domyślne ciemne, wciśnięty się rozjaśnia" },
+  { id: "v3", label: "V3 · mocny kontrast", idle: "darkSolid", pressed: "light",
+    title: "Domyślne ciemne jednolite (bez gradientu), wciśnięty jasny" },
 ];
 const DEFAULT_QUIZ_VERSION = "v1";
 
@@ -234,7 +290,7 @@ const DEFAULT_VIEW = "instruktaz";
 const HINTS = {
   instruktaz: "spacja — pauza · ←/→ — runda · R — restart",
   tablet: "Z — tracisz życie (z animacją) · 0–3 — skok do stanu · R — restart",
-  quiz: "kliknij odpowiedź · spacja — pauza · R — od nowa · 1/2 — wersja",
+  quiz: "kliknij odpowiedź · spacja — pauza · R — od nowa · 1–5 — wersja",
 };
 
 const STORAGE_KEY = "quizsteries-version";
@@ -530,7 +586,7 @@ const asImage = (paint) => (paint.startsWith("linear-gradient") ? paint : `linea
 
 /* Przycisk odpowiedzi (Quiz/button-types 1134×382): skorupa → rdzeń → twarze
    + tekst. Twarz domyślna leży pod spodem, wciśnięta na niej wchodzi
-   przejściem krycia. Wersja decyduje, która twarz z Figmy jest którą, więc
+   przejściem krycia. Wersja decyduje, która twarz jest którą, więc
    CSS dostaje gotowe obrazy i nie musi znać wersji. */
 function makeQuizAnswer(cfg, version) {
   const btn = document.createElement("button");
@@ -539,7 +595,8 @@ function makeQuizAnswer(cfg, version) {
   btn.dataset.answer = cfg.id;
   btn.setAttribute("aria-pressed", "false");
 
-  const [idle, pressed] = version.invert ? [cfg.dark, cfg.light] : [cfg.light, cfg.dark];
+  const idle = cfg[version.idle];
+  const pressed = cfg[version.pressed];
   btn.style.setProperty("--qa-fill", asImage(idle.fill));
   btn.style.setProperty("--qa-stroke", asImage(idle.stroke));
   btn.style.setProperty("--qa-fill-pressed", asImage(pressed.fill));
@@ -772,6 +829,7 @@ function buildTopbar() {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.textContent = v.label;
+    btn.title = v.title; // pełny opis w dymku — etykiety są skrócone, żeby pasek się mieścił
     btn.dataset.quiz = v.id;
     btn.addEventListener("click", () => mountQuizVersion(v.id));
     quizSwitch.appendChild(btn);
@@ -1031,7 +1089,7 @@ window.addEventListener("keydown", (e) => {
       if (currentViewId === "quiz") startQuestion();
       break;
     /* Cyfry: na instruktażu wersja timera (1–5), na tablecie liczba żyć (0–3),
-       w quizie wersja wciśnięcia (1–2). Cyfry spoza zakresu są ignorowane. */
+       w quizie wersja wciśnięcia (1–5). Cyfry spoza zakresu są ignorowane. */
     case "Digit0":
     case "Digit1":
     case "Digit2":

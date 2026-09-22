@@ -98,24 +98,49 @@ Gracz ma **10 sekund** na odpowiedź:
 Czas, przerwa na końcu, treść pytania i odpowiedzi siedzą w `QUIZ`
 i `QUIZ_ANSWERS` w `app.js`.
 
-### Dwie wersje animacji wciśnięcia
+### Pięć wersji animacji wciśnięcia
 
-Każdy przycisk ma w Figmie dwie „twarze”: **jasną** (pełny kolor, tak jak na
-ekranie quizu) i **ciemną** (gradient — osobne komponenty stanów wciśniętych).
+Każdy przycisk ma pięć „twarzy”, od najjaśniejszej do najciemniejszej.
+Wszystkie siedzą w `QUIZ_ANSWERS` w `app.js`:
+
+| Twarz | Skąd | Jak wygląda |
+| --- | --- | --- |
+| `light` | ekran quizu, node `2168-692` | pełny jasny kolor, jasny obrys |
+| `lightGradient` | drugi plik, node `15-148` | gradient w barwach `dark`, przesunięty ku jaśniejszym |
+| `dark` | node'y `2169-740` i dalsze | ciemny gradient |
+| `darker` | drugi plik, node `15-115` | ciemniejszy gradient, ciemniejsze obrysy |
+| `darkSolid` | wyliczona, nie z Figmy | pełny ciemny kolor bez gradientu |
+
+`darkSolid` powstała do wersji z mocnym kontrastem: to ta sama barwa co
+`light`, przyciemniona tak, żeby wszystkie cztery kolory miały równą jasność
+(OKLCH L 0.25, obrys L 0.36). Paleta nie miała do tego gotowych stopni —
+dostępne ciemne tokeny (`red/950`, `dark-blue/800`…) są prawie czarne
+i gubią kolor, a jaśniejsze dawałyby mniejszy kontrast niż V2.
 
 | Wersja | Na starcie | Po wciśnięciu |
 | --- | --- | --- |
-| **V1 · wciśnięcie przyciemnia** | jasne, jak na ekranie z Figmy | wybrany ciemnieje |
-| **V2 · wciśnięcie rozjaśnia** | ciemne | wybrany się rozjaśnia |
+| **V1 · przyciemnia** | `light` | `dark` |
+| **V1.2 · ciemniejszy** | `light` | `darker` |
+| **V1.3 · jaśniejsze** | `lightGradient` | `darker` |
+| **V2 · rozjaśnia** | `dark` | `light` |
+| **V3 · mocny kontrast** | `darkSolid` | `light` |
 
-Ruch jest w obu wersjach identyczny, różni je tylko to, która twarz jest
-domyślna. Kolorowy rdzeń zapada się w turkusową obudowę (do 95 %), odbija
-i wraca do rozmiaru (340 ms), a w tym samym czasie twarz płynnie przechodzi
-w drugą (200 ms). Animacja jest autorska — w Figmie są tylko stany przed
-i po.
+Etykiety w pasku są skrócone, żeby pasek się mieścił — pełny opis wersji
+pokazuje się w dymku po najechaniu na przycisk.
 
-Wersja przełącza się w pasku, klawiszami `1` / `2` albo w adresie:
-`?view=quiz&quiz=v1`, `?view=quiz&quiz=v2`.
+W V3 różnica jasności między niewybraną a wybraną odpowiedzią jest większa
+niż w V2 w każdym kolorze: czerwony +42 %, żółty +41 %, niebieski +12 %,
+zielony +119 % (w skali OKLCH).
+
+Ruch jest we wszystkich wersjach identyczny, różni je tylko to, która twarz
+jest domyślna, a która wciśnięta. Kolorowy rdzeń zapada się w turkusową
+obudowę (do 95 %), odbija i wraca do rozmiaru (340 ms), a w tym samym czasie
+twarz płynnie przechodzi w drugą (200 ms). Animacja jest autorska —
+w Figmie są tylko stany przed i po.
+
+Wersja przełącza się w pasku, klawiszami `1`–`5` albo w adresie:
+`?view=quiz&quiz=v1`, `…&quiz=v1.2`, `…&quiz=v1.3`, `…&quiz=v2`,
+`…&quiz=v3`.
 
 ## Sterowanie (testowe)
 
@@ -125,7 +150,7 @@ Wersja przełącza się w pasku, klawiszami `1` / `2` albo w adresie:
 | `→` / `←` | następna / poprzednia runda |
 | `R` | restart: runda 1 i pełne życia; w quizie pytanie od nowa |
 | `1`–`5` | wersja timera (na instruktażu) |
-| `1` / `2` | wersja animacji wciśnięcia (w quizie) |
+| `1`–`5` | wersja animacji wciśnięcia (w quizie) |
 | `0`–`3` | skok wprost do stanu żyć (na tablecie, bez animacji) |
 | `Z` | zła odpowiedź — jedno życie mniej, z animacją |
 
@@ -168,6 +193,11 @@ w `assets/`:
   siatka odpowiedzi 2 × 1134×382 na (247, 747), pasek czasu 1424×45 na
   (723, 1690). Stany wciśnięte przycisków: node'y `2169-740` (czerwony),
   `2169-742` (żółty), `2169-744` (niebieski), `2169-773` (zielony).
+- **Quiz, dodatkowe warianty przycisków** — **inny plik**:
+  `feDfMhqinxZSqSzWsB7qFF` („Estigroup — Newsletter”), node `15-115`
+  (ciemniejsze wciśnięte, twarz `darker`) i node `15-148` (jaśniejsze
+  domyślne, twarz `lightGradient`). Geometria identyczna jak w quizie,
+  różnią się tylko kolory rdzeni.
 
 Animacje utraty życia i wciśnięcia odpowiedzi są autorskie — w Figmie ich
 nie ma, są tylko stany przed i po.

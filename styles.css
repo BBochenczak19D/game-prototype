@@ -170,9 +170,10 @@ body {
   bottom: 0;
 }
 
-/* Kontrolki tabletu (życia + 5 wariantów animacji) sięgają ~1070 px —
-   poniżej tej szerokości podpowiedź klawiszy ustępuje im miejsca. */
-@media (max-width: 1250px) {
+/* Podpowiedź klawiszy stoi na końcu paska. Razem z nią pasek potrzebuje
+   do ~1440 px (tablet; instruktaż ~1395, quiz ~1315) — na węższych oknach
+   podpowiedź znika, żeby nie wyjeżdżała poza ekran. */
+@media (max-width: 1440px) {
   .topbar-hint {
     display: none;
   }
