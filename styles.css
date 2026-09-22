@@ -634,6 +634,10 @@ body {
   .qa.pressing .qa-core {
     animation-duration: 1ms !important;
   }
+
+  .qa {
+    transition-duration: 1ms;
+  }
 }
 
 /* ============================================================
@@ -779,6 +783,15 @@ body {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  transition: transform 220ms cubic-bezier(0.3, 0, 0.3, 1);
+}
+
+/* Wciśnięty zostaje delikatnie mniejszy od pozostałych — także po końcu
+   animacji, żeby po siatce było widać, który jest wybrany. Skalujemy cały
+   przycisk (nie rdzeń), więc siatka się nie przesuwa, a rdzeń może w tym
+   czasie robić swoje „zapadnięcie”. */
+.qa[aria-pressed="true"] {
+  transform: scale(0.975);
 }
 
 .qa:focus {
@@ -892,7 +905,8 @@ body {
 
 /* Animacja wciśnięcia — autorska, w Figmie są tylko stany przed i po.
    Kolorowy rdzeń zapada się w turkusową obudowę i odbija; w tym samym
-   czasie twarz przechodzi we wciśniętą (przejścia krycia i borderu wyżej). */
+   czasie twarz przechodzi we wciśniętą (przejście krycia wyżej), a cały
+   przycisk zjeżdża do mniejszego rozmiaru i już przy nim zostaje. */
 .qa.pressing .qa-core {
   animation: qa-press 340ms cubic-bezier(0.3, 0, 0.3, 1);
 }

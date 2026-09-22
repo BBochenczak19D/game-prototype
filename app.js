@@ -166,20 +166,14 @@ const QUIZ = {
 };
 
 /* Odpowiedzi w kolejności siatki: górny rząd L→P, dolny rząd L→P.
-   Każdy kolor ma pięć twarzy, od najjaśniejszej do najciemniejszej:
+   Każdy kolor ma cztery twarze, od najjaśniejszej do najciemniejszej:
    – light     = jasna, jak na ekranie 2168-692 (pełny kolor, jasny obrys),
    – lightGradient = jaśniejsza domyślna z drugiego pliku Figmy
                  (feDfMhqinxZSqSzWsB7qFF, node 15-148) — gradient w tych
                  samych barwach co `dark`, tylko przesunięty ku jaśniejszym,
    – dark      = ciemna, jak w osobnych node'ach wciśniętych (gradienty),
    – darker    = ciemniejszy wariant wciśniętego z drugiego pliku Figmy
-                 (node 15-115) — ta sama geometria, ciemniejsze gradienty,
-   – darkSolid = ciemna jednolita (bez gradientu) do wersji z mocniejszym
-                 kontrastem. Tej nie ma w Figmie: to ta sama barwa co jasna
-                 twarz, przyciemniona tak, żeby wszystkie cztery miały równą
-                 jasność (OKLCH L 0.25, obrys L 0.36). Paleta pliku nie ma
-                 pasujących stopni — dostępne są albo prawie czarne
-                 (red/950, dark-blue/800…), albo za mało kontrastowe.
+                 (node 15-115) — ta sama geometria, ciemniejsze gradienty.
    Która twarz jest domyślna, a która wciśnięta, decyduje wersja (QUIZ_VERSIONS).
    fill = wypełnienie ramki, stroke = obrys 6 px na zewnątrz; kolor albo
    gradient CSS. Gradienty ciemnych twarzy są przeliczone wprost z węzłów
@@ -203,7 +197,6 @@ const QUIZ_ANSWERS = [
       fill: "linear-gradient(0.362deg, #3c0707 -29%, #230606 150.01%)", // red/900 → red/950
       stroke: "linear-gradient(161.069deg, #8f1616 16.61%, #210405 53.21%)", // red/700 → ciemny
     },
-    darkSolid: { fill: "#420907", stroke: "#711614" },
   },
   {
     id: "yellow", text: "Odpowiedź", ring: false,
@@ -220,7 +213,6 @@ const QUIZ_ANSWERS = [
       fill: "linear-gradient(180deg, #1a1804 -27.86%, #5c500a 225.14%)", // yellow/900 → yellow/800
       stroke: "linear-gradient(151.48deg, #76670c 5.57%, #1a1804 57.39%)", // yellow/700 → yellow/900
     },
-    darkSolid: { fill: "#272206", stroke: "#463d10" },
   },
   {
     id: "blue", text: "Odpowiedź", ring: false,
@@ -237,7 +229,6 @@ const QUIZ_ANSWERS = [
       fill: "linear-gradient(360deg, #0e0f4a -41.57%, #060c23 130.57%)", // dark-blue/700 → dark-blue/800
       stroke: "linear-gradient(180.169deg, #113aa2 -33.03%, #060c23 66.81%)", // dark-blue/600 → dark-blue/800
     },
-    darkSolid: { fill: "#031958", stroke: "#093093" },
   },
   {
     id: "green", text: "Odpowiedź", ring: true,
@@ -254,27 +245,22 @@ const QUIZ_ANSWERS = [
       fill: "linear-gradient(178.169deg, #0d2805 -5.6%, #086318 236.91%)", // green/900 → green/800
       stroke: "linear-gradient(169.834deg, #19980e 9.24%, #042108 55.84%)", // green/700 → ciemny
     },
-    darkSolid: { fill: "#082a06", stroke: "#154a11" },
   },
 ];
 
 /* Wersje do porównania (przełącznik w pasku nad sceną).
-   Ruch wciśnięcia jest we wszystkich identyczny — różni je tylko to, która
-   twarz przycisku (klucz z QUIZ_ANSWERS) jest domyślna, a która pojawia się
-   po wciśnięciu. */
+   We wszystkich wciśnięcie przyciemnia i ruch jest identyczny — różni je
+   tylko jasność stanu domyślnego (klucze twarzy z QUIZ_ANSWERS).
+   Wciśnięty jest wszędzie ten sam: `darker` z node'a 15-115. */
 const QUIZ_VERSIONS = [
-  { id: "v1", label: "V1 · przyciemnia", idle: "light", pressed: "dark",
-    title: "Domyślne jasne, wciśnięty ciemnieje — jak na ekranie w Figmie" },
-  { id: "v1.2", label: "V1.2 · ciemniejszy", idle: "light", pressed: "darker",
-    title: "Jak V1, ale wciśnięty jest ciemniejszy (node 15-115)" },
-  { id: "v1.3", label: "V1.3 · jaśniejsze", idle: "lightGradient", pressed: "darker",
-    title: "Jaśniejsze domyślne (node 15-148) + ciemniejszy wciśnięty (node 15-115)" },
-  { id: "v2", label: "V2 · rozjaśnia", idle: "dark", pressed: "light",
-    title: "Na odwrót: domyślne ciemne, wciśnięty się rozjaśnia" },
-  { id: "v3", label: "V3 · mocny kontrast", idle: "darkSolid", pressed: "light",
-    title: "Domyślne ciemne jednolite (bez gradientu), wciśnięty jasny" },
+  { id: "v1.2", label: "V1.2 · jasne domyślne", idle: "light", pressed: "darker",
+    title: "Domyślne pełne jasne (ekran quizu), wciśnięty ciemniejszy (node 15-115)" },
+  { id: "v1.3", label: "V1.3 · średnie domyślne", idle: "lightGradient", pressed: "darker",
+    title: "Domyślne jaśniejszy gradient (node 15-148), wciśnięty ciemniejszy (node 15-115)" },
+  { id: "v2", label: "V2 · ciemne domyślne", idle: "dark", pressed: "darker",
+    title: "Domyślne ciemny gradient, wciśnięty jeszcze ciemniejszy (node 15-115)" },
 ];
-const DEFAULT_QUIZ_VERSION = "v1";
+const DEFAULT_QUIZ_VERSION = "v1.2";
 
 /* ============================================================
    WIDOKI (select w pasku nad sceną)
@@ -290,7 +276,7 @@ const DEFAULT_VIEW = "instruktaz";
 const HINTS = {
   instruktaz: "spacja — pauza · ←/→ — runda · R — restart",
   tablet: "Z — tracisz życie (z animacją) · 0–3 — skok do stanu · R — restart",
-  quiz: "kliknij odpowiedź · spacja — pauza · R — od nowa · 1–5 — wersja",
+  quiz: "kliknij odpowiedź · spacja — pauza · R — od nowa · 1–3 — wersja",
 };
 
 const STORAGE_KEY = "quizsteries-version";
@@ -1089,7 +1075,7 @@ window.addEventListener("keydown", (e) => {
       if (currentViewId === "quiz") startQuestion();
       break;
     /* Cyfry: na instruktażu wersja timera (1–5), na tablecie liczba żyć (0–3),
-       w quizie wersja wciśnięcia (1–5). Cyfry spoza zakresu są ignorowane. */
+       w quizie wersja wciśnięcia (1–3). Cyfry spoza zakresu są ignorowane. */
     case "Digit0":
     case "Digit1":
     case "Digit2":

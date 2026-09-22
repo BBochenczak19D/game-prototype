@@ -98,49 +98,42 @@ Gracz ma **10 sekund** na odpowiedź:
 Czas, przerwa na końcu, treść pytania i odpowiedzi siedzą w `QUIZ`
 i `QUIZ_ANSWERS` w `app.js`.
 
-### Pięć wersji animacji wciśnięcia
+### Trzy wersje do porównania
 
-Każdy przycisk ma pięć „twarzy”, od najjaśniejszej do najciemniejszej.
-Wszystkie siedzą w `QUIZ_ANSWERS` w `app.js`:
+We wszystkich wciśnięcie **przyciemnia** — to jest wybrany kierunek. Wersje
+różnią się tylko jasnością stanu domyślnego; wciśnięty jest wszędzie ten sam.
+
+| Wersja | Na starcie | Po wciśnięciu |
+| --- | --- | --- |
+| **V1.2 · jasne domyślne** | `light` | `darker` |
+| **V1.3 · średnie domyślne** | `lightGradient` | `darker` |
+| **V2 · ciemne domyślne** | `dark` | `darker` |
+
+Twarze przycisków siedzą w `QUIZ_ANSWERS` w `app.js`:
 
 | Twarz | Skąd | Jak wygląda |
 | --- | --- | --- |
 | `light` | ekran quizu, node `2168-692` | pełny jasny kolor, jasny obrys |
-| `lightGradient` | drugi plik, node `15-148` | gradient w barwach `dark`, przesunięty ku jaśniejszym |
+| `lightGradient` | drugi plik, node `15-148` | gradient przesunięty ku jaśniejszym |
 | `dark` | node'y `2169-740` i dalsze | ciemny gradient |
 | `darker` | drugi plik, node `15-115` | ciemniejszy gradient, ciemniejsze obrysy |
-| `darkSolid` | wyliczona, nie z Figmy | pełny ciemny kolor bez gradientu |
-
-`darkSolid` powstała do wersji z mocnym kontrastem: to ta sama barwa co
-`light`, przyciemniona tak, żeby wszystkie cztery kolory miały równą jasność
-(OKLCH L 0.25, obrys L 0.36). Paleta nie miała do tego gotowych stopni —
-dostępne ciemne tokeny (`red/950`, `dark-blue/800`…) są prawie czarne
-i gubią kolor, a jaśniejsze dawałyby mniejszy kontrast niż V2.
-
-| Wersja | Na starcie | Po wciśnięciu |
-| --- | --- | --- |
-| **V1 · przyciemnia** | `light` | `dark` |
-| **V1.2 · ciemniejszy** | `light` | `darker` |
-| **V1.3 · jaśniejsze** | `lightGradient` | `darker` |
-| **V2 · rozjaśnia** | `dark` | `light` |
-| **V3 · mocny kontrast** | `darkSolid` | `light` |
 
 Etykiety w pasku są skrócone, żeby pasek się mieścił — pełny opis wersji
 pokazuje się w dymku po najechaniu na przycisk.
 
-W V3 różnica jasności między niewybraną a wybraną odpowiedzią jest większa
-niż w V2 w każdym kolorze: czerwony +42 %, żółty +41 %, niebieski +12 %,
-zielony +119 % (w skali OKLCH).
+Ruch jest we wszystkich wersjach identyczny. Kolorowy rdzeń zapada się
+w turkusową obudowę (do 95 %) i odbija (340 ms), twarz płynnie przechodzi
+w wciśniętą (200 ms), a cały przycisk zjeżdża do 97,5 % rozmiaru i **przy nim
+zostaje**, dopóki odpowiedź jest wybrana — dzięki temu po siatce widać, który
+przycisk jest wciśnięty. Animacja jest autorska, w Figmie są tylko stany
+przed i po.
 
-Ruch jest we wszystkich wersjach identyczny, różni je tylko to, która twarz
-jest domyślna, a która wciśnięta. Kolorowy rdzeń zapada się w turkusową
-obudowę (do 95 %), odbija i wraca do rozmiaru (340 ms), a w tym samym czasie
-twarz płynnie przechodzi w drugą (200 ms). Animacja jest autorska —
-w Figmie są tylko stany przed i po.
+Wersja przełącza się w pasku, klawiszami `1`–`3` albo w adresie:
+`?view=quiz&quiz=v1.2`, `…&quiz=v1.3`, `…&quiz=v2`. Domyślna to V1.2.
 
-Wersja przełącza się w pasku, klawiszami `1`–`5` albo w adresie:
-`?view=quiz&quiz=v1`, `…&quiz=v1.2`, `…&quiz=v1.3`, `…&quiz=v2`,
-`…&quiz=v3`.
+Wcześniej były jeszcze dwie wersje z wciśnięciem **rozjaśniającym** (V1
+i V3 z ciemnymi jednolitymi przyciskami) — wypadły po wyborze kierunku,
+ale siedzą w historii gita (commit `d56814d`), więc da się je przywrócić.
 
 ## Sterowanie (testowe)
 
