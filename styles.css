@@ -24,18 +24,17 @@
   /* Wartości startowe — nadpisywane przez applyTheme() w app.js */
   --bg: #100903;
   --panel-border: #5c500a;
-  --seg-border-off: #f6e472;
-  --seg-left-border-off: #5c500a;
-  --seg-grad-from: #141302;
-  --seg-grad-to: #76670c;
   --shell-from: rgba(6, 20, 26, 0.32);
   --shell-to: rgba(8, 70, 66, 0.32);
-  --seg-on: #ceb935;
-  --seg-on-border: #f6e472;
-  /* gradient zapalonego segmentu w wersji 2 (yellow/800 → yellow/500) */
-  --seg-on-from: #5c500a;
-  --seg-on-to: #ceb935;
   --text: #d8ca94;
+
+  /* Kafelki timera — wartości startowe (żółty), podmieniane przez
+     setTimerColor() w app.js. `active` = kafelek jeszcze świeci,
+     `spent` = wygaszony (barwy wciśniętego przycisku). */
+  --seg-active-fill: linear-gradient(185.182deg, #1a1804 31.108%, #76670c 90.45%);
+  --seg-active-border: #ceb935;
+  --seg-spent-fill: linear-gradient(185.182deg, #141302 31.108%, #383106 90.45%);
+  --seg-spent-border: #76670c;
 
   /* Cienie kolorowego rdzenia przycisku odpowiedzi — wspólne dla okrągłych
      przycisków (tablet) i prostokątnych (quiz); w Figmie identyczne.
@@ -161,6 +160,25 @@ body {
   color: #f6e472;
 }
 
+/* Próbka koloru timera — sam kolor, bez podpisu (nazwa jest w dymku) */
+.switch button.swatch {
+  width: 26px;
+  height: 22px;
+  padding: 0;
+  border-color: #23343a;
+  background: var(--swatch);
+}
+
+.switch button.swatch:hover {
+  border-color: #6a7a80;
+}
+
+.switch button.swatch[aria-pressed="true"] {
+  background: var(--swatch);
+  border-color: #f6e472;
+  box-shadow: 0 0 0 1px #f6e472;
+}
+
 /* Scena mieszka pod paskiem */
 #viewport {
   position: fixed;
@@ -249,58 +267,36 @@ body {
     -10px 10px 64px 12px #051114;
 }
 
-/* Wnętrze segmentu — stan OFF (przygaszony) */
+/* Wnętrze kafelka — stan WYGASZONY (czas już minął).
+   Barwy obu stanów ustawia app.js w zmiennych CSS, zależnie od wybranego
+   koloru timera; kafelek nie wie, czy jest czerwony, czy biały.
+   Kafelki nie mają animacji wciśnięcia — to nie są przyciski. */
 .seg-core {
   width: 100%;
   height: 100%;
-  border: 3px solid var(--seg-border-off);
+  border: 3px solid var(--seg-spent-border);
   opacity: 0.9;
   backdrop-filter: blur(7.5px);
-  background-image: linear-gradient(
-    5.593deg,
-    var(--seg-grad-from) 12.611%,
-    var(--seg-grad-to) 271.55%
-  );
+  background-image: var(--seg-spent-fill);
   box-shadow: 0 12px 52px 6px rgba(5, 17, 40, 0.6),
     -2px 2px 32px 6px #030c12;
-  transition: background-color 120ms linear;
+  transition: background-image 120ms linear, border-color 120ms linear;
 }
 
-/* Wariant lewej kolumny: bez skorupy, ciemniejszy border, gradient 53° */
-.seg.plain .seg-core {
-  border-color: var(--seg-left-border-off);
-  background-image: linear-gradient(
-    53.121deg,
-    var(--seg-grad-from) 12.611%,
-    var(--seg-grad-to) 271.55%
-  );
-}
-
-/* Stan ON (zapalony) — jak zapalone segmenty w Figmie (#ceb935) */
+/* Stan AKTYWNY (kafelek jeszcze „żyje”) */
 .seg.on .seg-core {
-  background-image: none;
-  background-color: var(--seg-on);
-  border-color: var(--seg-on-border);
+  background-image: var(--seg-active-fill);
+  border-color: var(--seg-active-border);
   opacity: 1;
   backdrop-filter: none;
   box-shadow: none;
 }
 
 /* --- Wariant WERSJI 2: pigułka (pełne zaokrąglenie) ---
-   Figma: shell rounded 999999px, rdzeń 99999px; zapalony segment
-   ma gradient yellow/800 → yellow/500 pod kątem 185.18°. */
+   Figma: shell rounded 999999px, rdzeń 99999px. */
 .seg.pill,
 .seg.pill .seg-core {
   border-radius: 9999px;
-}
-
-.seg.pill.on .seg-core {
-  background-color: transparent;
-  background-image: linear-gradient(
-    185.182deg,
-    var(--seg-on-from) 31.108%,
-    var(--seg-on-to) 90.45%
-  );
 }
 
 /* --- Narożniki: eksporty SVG z Figmy (Group 42–45).

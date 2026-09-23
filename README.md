@@ -22,15 +22,20 @@ w przeglądarce.
 
 ## Ekran: Instruktaż
 
-### Trzy wersje timera do porównania
+To ekran wspólny — ten, który przy grze **Would You Press** pokazuje
+zadanie i timer.
+
+### Pięć wersji timera do porównania
+
+Etykiety w pasku są skrócone, pełny opis jest w dymku po najechaniu.
 
 | Wersja | Timer |
 | --- | --- |
-| **V1 · ramka dookoła** | 52 segmenty zapalają się po obwodzie: góra → prawo → dół → lewo |
-| **V2 · kolumny równolegle** | dwie pionowe kolumny po 16 pigułek, obie ładują się jednocześnie od dołu do góry |
-| **V2 · kolumny kolejno** | najpierw cała lewa kolumna, potem cała prawa (też od dołu do góry) |
-| **V3 · opada od lewej** | wszystkie 32 pigułki startują zapalone i gasną kolumna po kolumnie, od góry w dół; pierwsza opada lewa |
-| **V3 · opada od prawej** | to samo, ale pierwsza opada prawa kolumna |
+| **V1 · ramka** | 52 kafelki zapalają się po obwodzie: góra → prawo → dół → lewo |
+| **V2 · równolegle** | dwie pionowe kolumny po 16 pigułek, obie ładują się jednocześnie od dołu do góry |
+| **V2 · kolejno** | najpierw cała lewa kolumna, potem cała prawa (też od dołu do góry) |
+| **V3 · od lewej** | wszystkie 32 pigułki startują zapalone i gasną kolumna po kolumnie, od góry w dół; pierwsza opada lewa |
+| **V3 · od prawej** | to samo, ale pierwsza opada prawa kolumna |
 
 V3 zaczyna rundę z pełnymi kolumnami i kończy z pustymi — odwrotnie niż V2.
 Poza stanem różni się też kierunkiem w kolumnie: V2 ładuje się od dołu do
@@ -43,6 +48,33 @@ Wersję też można wskazać w adresie: `?v=v1`, `?v=v2a`, `?v=v2b`, `?v=v3a`
 
 W każdej wersji pełny timer = koniec czasu rundy (domyślnie 4500 ms), potem
 600 ms pauzy i następna runda; po piątej rundzie prototyp zapętla się od nowa.
+
+### Kolor timera
+
+Timer chodzi w pięciu kolorach: czterech z przycisków Would You Press plus
+biały. Kolor wybiera się próbkami w pasku (podpis „kolor"), a w adresie
+parametrem `?timer=` — `red`, `yellow`, `blue`, `green`, `white`. Wybór
+zapamiętuje się w przeglądarce; domyślny jest żółty.
+
+Kafelek ma dwa stany i oba biorą barwy wprost z przycisku w tym kolorze:
+
+| Stan kafelka | Barwy |
+| --- | --- |
+| **aktywny** (czas jeszcze leci) | jak przycisk w stanie domyślnym |
+| **wygaszony** (czas minął) | jak przycisk wciśnięty — ten przyciemniony |
+
+Kafelki nie dostają animacji wciskania — to nie są przyciski, zmienia się
+tylko kolor (120 ms). Kolory siedzą w `TIMER_COLORS` w `app.js`; biały nie
+pochodzi z Figmy, jest dobrany tak, żeby trzymał tę samą logikę (jasny
+kafelek aktywny, neutralna szarość po wygaszeniu).
+
+**Uwaga o czytelności:** barwy przycisków są ciemne, więc różnica między
+kafelkiem aktywnym a wygaszonym jest w kolorach subtelna. Zmierzona różnica
+jasności (OKLCH): czerwony 0.09, żółty 0.11, niebieski 0.09, zielony 0.21,
+biały 0.46. Poprzedni, żółty timer miał 0.43 — z daleka było lepiej widać,
+ile czasu zostało. Gdyby trzeba było to podbić, wystarczy w `TIMER_COLORS`
+dać aktywnemu kafelkowi jaśniejszy koniec gradientu (np. kolor obrysu
+przycisku); wtedy różnice rosną do ok. 0.25–0.44.
 
 ## Ekran: Tablet gracza · Would You Press
 
@@ -242,8 +274,10 @@ przeglądarka podstawi zwykły systemowy font. Caudex leży lokalnie
 w `assets/fonts/`.
 
 Uwaga: tła i narożniki mają kolory wypalone w assetach — motywy (`THEMES`
-w `app.js`) sterują segmentami, panelem i tekstem. Motyw 1 („yellow") jest
+w `app.js`) sterują panelem, skorupami i tekstem. Motyw 1 („yellow") jest
 wypełniony tokenami z Figmy, motywy 2–5 to placeholdery do uzupełnienia.
+Kolor kafelków timera jest osobno, w `TIMER_COLORS`, bo wybiera się go
+przełącznikiem.
 
 ### Czeka na design
 

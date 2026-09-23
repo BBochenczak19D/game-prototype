@@ -69,16 +69,62 @@ const V2 = {
 
 /* Wersje timera do porównania (przełącznik w pasku nad sceną) */
 const VERSIONS = [
-  { id: "v1",  label: "V1 · ramka dookoła",      build: (l) => buildV1(l) },
-  { id: "v2a", label: "V2 · kolumny równolegle", build: (l) => buildV2(l, { mode: "parallel" }) },
-  { id: "v2b", label: "V2 · kolumny kolejno",    build: (l) => buildV2(l, { mode: "sequential" }) },
+  { id: "v1", label: "V1 · ramka", title: "Ramka dookoła: 52 kafelki zapalają się po obwodzie",
+    build: (l) => buildV1(l) },
+  { id: "v2a", label: "V2 · równolegle", title: "Dwie kolumny ładują się jednocześnie, od dołu do góry",
+    build: (l) => buildV2(l, { mode: "parallel" }) },
+  { id: "v2b", label: "V2 · kolejno", title: "Najpierw cała lewa kolumna, potem prawa (też od dołu)",
+    build: (l) => buildV2(l, { mode: "sequential" }) },
   /* V3 = start z pełnymi kolumnami, timer opada w dół i gasi je kolumna po
      kolumnie, aż wszystko jest puste. Warianty różni to, która kolumna
      opada pierwsza. */
-  { id: "v3a", label: "V3 · opada od lewej",  build: (l) => buildV2(l, { mode: "sequential", invert: true, from: "top", first: "left" }) },
-  { id: "v3b", label: "V3 · opada od prawej", build: (l) => buildV2(l, { mode: "sequential", invert: true, from: "top", first: "right" }) },
+  { id: "v3a", label: "V3 · od lewej", title: "Kolumny startują pełne i opadają od góry; pierwsza lewa",
+    build: (l) => buildV2(l, { mode: "sequential", invert: true, from: "top", first: "left" }) },
+  { id: "v3b", label: "V3 · od prawej", title: "To samo, ale pierwsza opada prawa kolumna",
+    build: (l) => buildV2(l, { mode: "sequential", invert: true, from: "top", first: "right" }) },
 ];
 const DEFAULT_VERSION = "v1";
+
+/* --- Kolory timera ---
+   Klient chce timer w barwach przycisków z Would You Press plus biały.
+   Kafelek ma dwa stany, dokładnie jak przycisk:
+   – active = jeszcze świeci — barwy domyślnej twarzy przycisku,
+   – spent  = wygaszony, czas minął — barwy twarzy wciśniętej.
+   Bierzemy końce gradientów z ANSWERS i układamy je wzdłuż kafelka
+   (ciemniejszy koniec u góry), pod kątem pigułki z Figmy. Kafelki nie
+   dostają animacji wciśnięcia — to nie są przyciski.
+   `swatch` to tylko kolor próbki w pasku podglądu. */
+const TIMER_COLORS = [
+  {
+    id: "red", label: "czerwony", swatch: "#b11719",
+    active: { from: "#230606", to: "#8f1616", border: "#b11719" }, // red/950 → red/700
+    spent: { from: "#230606", to: "#3c0707", border: "#8f1616" },  // red/950 → red/900
+  },
+  {
+    id: "yellow", label: "żółty", swatch: "#ceb935",
+    active: { from: "#1a1804", to: "#76670c", border: "#ceb935" }, // yellow/900 → yellow/700
+    spent: { from: "#141302", to: "#383106", border: "#76670c" },  // yellow/960 → ciemna oliwka
+  },
+  {
+    id: "blue", label: "niebieski", swatch: "#1e57e6",
+    active: { from: "#060c23", to: "#113aa2", border: "#1e57e6" }, // dark-blue/800 → /600
+    spent: { from: "#060c23", to: "#0e0f4a", border: "#1e57e6" },  // dark-blue/800 → /700
+  },
+  {
+    id: "green", label: "zielony", swatch: "#19980e",
+    active: { from: "#0d2805", to: "#19980e", border: "#0fcd4e" }, // green/900 → green/700
+    spent: { from: "#021605", to: "#0d2805", border: "#19980e" },  // green/950 → green/900
+  },
+  /* Biały — w palecie Figmy go nie ma, więc dobrany tak, żeby trzymał tę
+     samą logikę co kolory: aktywny kafelek jasny, wygaszony w neutralnej
+     szarości o jasności zbliżonej do pozostałych wygaszonych. */
+  {
+    id: "white", label: "biały", swatch: "#ffffff",
+    active: { from: "#5a6166", to: "#e9eef1", border: "#ffffff" },
+    spent: { from: "#0f1214", to: "#343a3e", border: "#5a6166" },
+  },
+];
+const DEFAULT_TIMER_COLOR = "yellow";
 
 /* --- Rundy: tekst zadania + motyw + czas trwania (4000–5000 ms) --- */
 const ROUNDS = [
@@ -349,29 +395,23 @@ const STORAGE_KEY = "quizsteries-version";
 const VIEW_STORAGE_KEY = "quizsteries-view";
 const ANIM_STORAGE_KEY = "quizsteries-anim";
 const QUIZ_STORAGE_KEY = "quizsteries-quiz";
+const TIMER_COLOR_STORAGE_KEY = "quizsteries-timer-color";
 
 /* ============================================================
    MOTYWY — 5 zestawów kolorów.
    Motyw 0 („yellow”) = tokeny z Figmy. Motywy 1–4 to placeholdery
    (kopie yellow) — kolory zostaną dopisane później.
    Uwaga: tła (PNG) i narożniki (SVG) mają kolory wypalone w assetach —
-   motyw steruje segmentami, panelem i tekstem.
+   motyw steruje panelem, skorupami i tekstem. Kolor kafelków timera jest
+   osobno (TIMER_COLORS), bo wybiera się go przełącznikiem w pasku.
    ============================================================ */
 const THEMES = [
   {
     name: "yellow",
     bg: "#100903",                      // tło sceny / letterbox (brown/900)
     panelBorder: "#5c500a",             // yellow/800
-    segBorderOff: "#f6e472",            // yellow/400
-    segLeftBorderOff: "#5c500a",        // yellow/800 (lewa kolumna w v1)
-    segGradFrom: "#141302",             // yellow/960
-    segGradTo: "#76670c",               // yellow/700
     shellFrom: "rgba(6, 20, 26, 0.32)", // turquoise/925
     shellTo: "rgba(8, 70, 66, 0.32)",   // turquoise/700
-    segOn: "#ceb935",                   // zapalony segment (v1, płaski)
-    segOnBorder: "#f6e472",
-    segOnFrom: "#5c500a",               // zapalony segment (v2, gradient)
-    segOnTo: "#ceb935",
     text: "#d8ca94",                    // beige/500
   },
 ];
@@ -394,6 +434,7 @@ let currentViewId = DEFAULT_VIEW;
 let currentVersionId = DEFAULT_VERSION;
 let currentAnimId = DEFAULT_ANIM;
 let currentQuizVersionId = DEFAULT_QUIZ_VERSION;
+let currentTimerColorId = DEFAULT_TIMER_COLOR;
 
 /* Tło widoku — każdy ekran ma własne rozciągnięcie z Figmy */
 function makeBg(cfg) {
@@ -826,22 +867,36 @@ function fitScene() {
 window.addEventListener("resize", fitScene);
 if (window.ResizeObserver) new ResizeObserver(fitScene).observe(viewportEl);
 
-/* --- Motyw: podmiana zmiennych CSS --- */
+/* --- Motyw: podmiana zmiennych CSS.
+   Kolory samych kafelków timera nie idą już przez motyw — ustawia je
+   setTimerColor(), bo wybiera się je osobno w pasku. --- */
 function applyTheme(theme) {
   const root = document.documentElement.style;
   root.setProperty("--bg", theme.bg);
   root.setProperty("--panel-border", theme.panelBorder);
-  root.setProperty("--seg-border-off", theme.segBorderOff);
-  root.setProperty("--seg-left-border-off", theme.segLeftBorderOff);
-  root.setProperty("--seg-grad-from", theme.segGradFrom);
-  root.setProperty("--seg-grad-to", theme.segGradTo);
   root.setProperty("--shell-from", theme.shellFrom);
   root.setProperty("--shell-to", theme.shellTo);
-  root.setProperty("--seg-on", theme.segOn);
-  root.setProperty("--seg-on-border", theme.segOnBorder);
-  root.setProperty("--seg-on-from", theme.segOnFrom);
-  root.setProperty("--seg-on-to", theme.segOnTo);
   root.setProperty("--text", theme.text);
+}
+
+/* Kolor kafelków timera — dwa stany naraz, w zmiennych CSS.
+   Kąt 185.182° to ten sam co w pigułkach z Figmy. */
+function setTimerColor(id) {
+  const color = TIMER_COLORS.find((c) => c.id === id) || TIMER_COLORS[0];
+  currentTimerColorId = color.id;
+
+  const grad = (s) => `linear-gradient(185.182deg, ${s.from} 31.108%, ${s.to} 90.45%)`;
+  const root = document.documentElement.style;
+  root.setProperty("--seg-active-fill", grad(color.active));
+  root.setProperty("--seg-active-border", color.active.border);
+  root.setProperty("--seg-spent-fill", grad(color.spent));
+  root.setProperty("--seg-spent-border", color.spent.border);
+
+  document.querySelectorAll("#timer-color-switch button").forEach((btn) => {
+    btn.setAttribute("aria-pressed", String(btn.dataset.color === color.id));
+  });
+
+  remember(TIMER_COLOR_STORAGE_KEY, color.id);
 }
 
 /* Zapamiętanie wyboru; w trybie prywatnym po prostu się nie zapamięta */
@@ -871,9 +926,23 @@ function buildTopbar() {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.textContent = v.label;
+    btn.title = v.title; // etykiety są skrócone, pełny opis w dymku
     btn.dataset.version = v.id;
     btn.addEventListener("click", () => mountVersion(v.id));
     versions.appendChild(btn);
+  });
+
+  const colors = document.getElementById("timer-color-switch");
+  TIMER_COLORS.forEach((c) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "swatch";
+    btn.style.setProperty("--swatch", c.swatch);
+    btn.title = "Timer w kolorze: " + c.label;
+    btn.setAttribute("aria-label", "Timer w kolorze: " + c.label);
+    btn.dataset.color = c.id;
+    btn.addEventListener("click", () => setTimerColor(c.id));
+    colors.appendChild(btn);
   });
 
   const lives = document.getElementById("lives-switch");
@@ -1205,6 +1274,7 @@ buildTopbar();
 currentVersionId = initialChoice("v", STORAGE_KEY, VERSIONS.map((v) => v.id), DEFAULT_VERSION);
 currentQuizVersionId = initialChoice("quiz", QUIZ_STORAGE_KEY, QUIZ_VERSIONS.map((v) => v.id), DEFAULT_QUIZ_VERSION);
 setLifeAnim(initialChoice("anim", ANIM_STORAGE_KEY, LIFE_ANIMS.map((a) => a.id), DEFAULT_ANIM));
+setTimerColor(initialChoice("timer", TIMER_COLOR_STORAGE_KEY, TIMER_COLORS.map((c) => c.id), DEFAULT_TIMER_COLOR));
 fitScene();
 mountView(initialChoice("view", VIEW_STORAGE_KEY, VIEWS.map((v) => v.id), DEFAULT_VIEW));
 requestAnimationFrame(tick);
