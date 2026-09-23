@@ -86,45 +86,94 @@ const VERSIONS = [
 const DEFAULT_VERSION = "v1";
 
 /* --- Kolory timera ---
-   Klient chce timer w barwach przycisków z Would You Press plus biały.
-   Kafelek ma dwa stany, dokładnie jak przycisk:
-   – active = jeszcze świeci — barwy domyślnej twarzy przycisku,
-   – spent  = wygaszony, czas minął — barwy twarzy wciśniętej.
-   Bierzemy końce gradientów z ANSWERS i układamy je wzdłuż kafelka
-   (ciemniejszy koniec u góry), pod kątem pigułki z Figmy. Kafelki nie
-   dostają animacji wciśnięcia — to nie są przyciski.
+   Cztery kolory wprost z Figmy (plik feDfMhqinxZSqSzWsB7qFF): node 30-332
+   czerwony, 30-370 żółty, 30-408 zielony, 30-446 niebieski. Każdy to pełny
+   ekran instruktażu z dwiema kolumnami, a kafelki mają w nim dwa stany:
+   – active = czas jeszcze leci,
+   – spent  = wygaszony, ten przyciemniony.
+   Wypełnienie i obrys to gradienty policzone dla rdzenia 67×312 px, czyli
+   dokładnie tego, co mamy w prototypie. Obrys leży na zewnątrz (3 px).
+   `style` wybiera zestaw efektów — te same co w przyciskach odpowiedzi:
+   ring = obwódka, glow = poświata z blurem, flat = bez cieni, pełne krycie.
+   Kafelki nie dostają animacji wciśnięcia — to nie są przyciski.
    `swatch` to tylko kolor próbki w pasku podglądu. */
 const TIMER_COLORS = [
   {
     id: "red", label: "czerwony", swatch: "#b11719",
-    active: { from: "#230606", to: "#8f1616", border: "#b11719" }, // red/950 → red/700
-    spent: { from: "#230606", to: "#3c0707", border: "#8f1616" },  // red/950 → red/900
+    active: {
+      fill: "linear-gradient(40.611deg, #b11719 37.11%, #3c0707 119%)", // red/600 → red/900
+      stroke: "linear-gradient(180.264deg, #b11719 -5.92%, #210405 42.62%)",
+      style: "ring",
+    },
+    spent: {
+      fill: "linear-gradient(8.39deg, #3c0707 -120.19%, #230606 98.41%)", // red/900 → red/950
+      stroke: "linear-gradient(179.669deg, #8f1616 -8.4%, #210405 49.99%)",
+      style: "ring",
+    },
   },
   {
     id: "yellow", label: "żółty", swatch: "#ceb935",
-    active: { from: "#1a1804", to: "#76670c", border: "#ceb935" }, // yellow/900 → yellow/700
-    spent: { from: "#141302", to: "#383106", border: "#76670c" },  // yellow/960 → ciemna oliwka
+    active: {
+      fill: "linear-gradient(235.493deg, #5c500a -31.11%, #ceb935 90.45%)", // yellow/800 → yellow/500
+      stroke: "linear-gradient(182.472deg, #f6e472 -34.19%, #1a1804 67.05%)",
+      style: "flat",
+    },
+    spent: {
+      fill: "linear-gradient(57.516deg, #141302 12.61%, #76670c 271.55%)", // yellow/960 → yellow/700
+      stroke: "linear-gradient(182.472deg, #f6e472 -34.19%, #1a1804 67.05%)",
+      style: "glow",
+    },
   },
   {
     id: "blue", label: "niebieski", swatch: "#1e57e6",
-    active: { from: "#060c23", to: "#113aa2", border: "#1e57e6" }, // dark-blue/800 → /600
-    spent: { from: "#060c23", to: "#0e0f4a", border: "#1e57e6" },  // dark-blue/800 → /700
+    active: {
+      fill: "linear-gradient(3.388deg, #113aa2 -9.25%, #060c23 189.65%)", // dark-blue/600 → /800
+      stroke: "linear-gradient(179.923deg, #1e57e6 -19.16%, #060c23 67.15%)",
+      style: "glow",
+    },
+    spent: {
+      fill: "linear-gradient(360deg, #0e0f4a -41.57%, #060c23 130.57%)", // dark-blue/700 → /800
+      stroke: "linear-gradient(180deg, #113aa2 0.94%, #020317 70.13%)",
+      style: "glow",
+    },
   },
   {
     id: "green", label: "zielony", swatch: "#19980e",
-    active: { from: "#0d2805", to: "#19980e", border: "#0fcd4e" }, // green/900 → green/700
-    spent: { from: "#021605", to: "#0d2805", border: "#19980e" },  // green/950 → green/900
+    active: {
+      fill: "linear-gradient(181.445deg, #0d2805 -97.61%, #19980e 132.69%)", // green/900 → green/700
+      stroke: "linear-gradient(179.699deg, #0fcd4e -9.25%, #042108 63.03%)",
+      style: "ring",
+    },
+    spent: {
+      fill: "linear-gradient(197.698deg, #021605 5.28%, #0d2805 129.84%)", // green/950 → green/900
+      stroke: "linear-gradient(179.762deg, #19980e -9.27%, #042108 57.69%)",
+      style: "ring",
+    },
   },
-  /* Biały — w palecie Figmy go nie ma, więc dobrany tak, żeby trzymał tę
-     samą logikę co kolory: aktywny kafelek jasny, wygaszony w neutralnej
-     szarości o jasności zbliżonej do pozostałych wygaszonych. */
+  /* Biały — designu nie ma, więc zbudowany tak samo jak żółty (ten sam układ
+     gradientów i te same style efektów), tylko w neutralnych szarościach. */
   {
     id: "white", label: "biały", swatch: "#ffffff",
-    active: { from: "#5a6166", to: "#e9eef1", border: "#ffffff" },
-    spent: { from: "#0f1214", to: "#343a3e", border: "#5a6166" },
+    active: {
+      fill: "linear-gradient(235.493deg, #6b7075 -31.11%, #ffffff 90.45%)",
+      stroke: "linear-gradient(182.472deg, #ffffff -34.19%, #14171a 67.05%)",
+      style: "flat",
+    },
+    spent: {
+      fill: "linear-gradient(57.516deg, #0f1214 12.61%, #3a4045 271.55%)",
+      stroke: "linear-gradient(182.472deg, #ffffff -34.19%, #14171a 67.05%)",
+      style: "glow",
+    },
   },
 ];
 const DEFAULT_TIMER_COLOR = "yellow";
+
+/* Zestawy efektów kafelka — cienie te same co w przyciskach odpowiedzi */
+const SEG_STYLES = {
+  ring: { shadow: "var(--answer-shadow-ring)", blur: "none", opacity: "0.9" },
+  glow: { shadow: "var(--answer-shadow-glow)", blur: "blur(7.5px)", opacity: "0.9" },
+  flat: { shadow: "none", blur: "none", opacity: "1" },
+};
 
 /* --- Rundy: tekst zadania + motyw + czas trwania (4000–5000 ms) --- */
 const ROUNDS = [
@@ -879,18 +928,22 @@ function applyTheme(theme) {
   root.setProperty("--text", theme.text);
 }
 
-/* Kolor kafelków timera — dwa stany naraz, w zmiennych CSS.
-   Kąt 185.182° to ten sam co w pigułkach z Figmy. */
+/* Kolor kafelków timera — oba stany naraz, w zmiennych CSS. Sam kafelek
+   nie wie, jaki jest kolor ani który stan jest „żywy”. */
 function setTimerColor(id) {
   const color = TIMER_COLORS.find((c) => c.id === id) || TIMER_COLORS[0];
   currentTimerColorId = color.id;
 
-  const grad = (s) => `linear-gradient(185.182deg, ${s.from} 31.108%, ${s.to} 90.45%)`;
   const root = document.documentElement.style;
-  root.setProperty("--seg-active-fill", grad(color.active));
-  root.setProperty("--seg-active-border", color.active.border);
-  root.setProperty("--seg-spent-fill", grad(color.spent));
-  root.setProperty("--seg-spent-border", color.spent.border);
+  ["active", "spent"].forEach((stan) => {
+    const face = color[stan];
+    const style = SEG_STYLES[face.style] || SEG_STYLES.glow;
+    root.setProperty(`--seg-${stan}-fill`, face.fill);
+    root.setProperty(`--seg-${stan}-stroke`, face.stroke);
+    root.setProperty(`--seg-${stan}-shadow`, style.shadow);
+    root.setProperty(`--seg-${stan}-blur`, style.blur);
+    root.setProperty(`--seg-${stan}-opacity`, style.opacity);
+  });
 
   document.querySelectorAll("#timer-color-switch button").forEach((btn) => {
     btn.setAttribute("aria-pressed", String(btn.dataset.color === color.id));

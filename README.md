@@ -56,25 +56,39 @@ biały. Kolor wybiera się próbkami w pasku (podpis „kolor"), a w adresie
 parametrem `?timer=` — `red`, `yellow`, `blue`, `green`, `white`. Wybór
 zapamiętuje się w przeglądarce; domyślny jest żółty.
 
-Kafelek ma dwa stany i oba biorą barwy wprost z przycisku w tym kolorze:
+Kafelek ma dwa stany:
 
-| Stan kafelka | Barwy |
+| Stan kafelka | Kiedy |
 | --- | --- |
-| **aktywny** (czas jeszcze leci) | jak przycisk w stanie domyślnym |
-| **wygaszony** (czas minął) | jak przycisk wciśnięty — ten przyciemniony |
+| **aktywny** | czas jeszcze leci |
+| **wygaszony** | czas minął — kafelek przygaszony |
 
 Kafelki nie dostają animacji wciskania — to nie są przyciski, zmienia się
-tylko kolor (120 ms). Kolory siedzą w `TIMER_COLORS` w `app.js`; biały nie
-pochodzi z Figmy, jest dobrany tak, żeby trzymał tę samą logikę (jasny
-kafelek aktywny, neutralna szarość po wygaszeniu).
+tylko kolor (120 ms).
 
-**Uwaga o czytelności:** barwy przycisków są ciemne, więc różnica między
-kafelkiem aktywnym a wygaszonym jest w kolorach subtelna. Zmierzona różnica
-jasności (OKLCH): czerwony 0.09, żółty 0.11, niebieski 0.09, zielony 0.21,
-biały 0.46. Poprzedni, żółty timer miał 0.43 — z daleka było lepiej widać,
-ile czasu zostało. Gdyby trzeba było to podbić, wystarczy w `TIMER_COLORS`
-dać aktywnemu kafelkowi jaśniejszy koniec gradientu (np. kolor obrysu
-przycisku); wtedy różnice rosną do ok. 0.25–0.44.
+Cztery kolory pochodzą wprost z Figmy (plik `feDfMhqinxZSqSzWsB7qFF`):
+
+| Kolor | Node |
+| --- | --- |
+| czerwony | `30-332` |
+| żółty | `30-370` |
+| zielony | `30-408` |
+| niebieski | `30-446` |
+
+Każdy node to cały ekran instruktażu w danym kolorze, z kafelkami w obu
+stanach. Wartości (`TIMER_COLORS` w `app.js`) są przeliczone z węzłów, bo
+obrysy są gradientowe i leżą **na zewnątrz** ramki (3 px) — rdzeń ma więc
+73×318 px, a nie 67×312. Efekty biorą te same zestawy cieni co przyciski:
+`ring` (czerwony, zielony), `glow` z blurem (niebieski i wygaszony żółty)
+albo `flat` — bez cieni i w pełni kryjący (aktywny żółty).
+
+**Biały** nie ma designu: zbudowany jest tak samo jak żółty (ten sam układ
+gradientów i te same efekty), tylko w neutralnych szarościach.
+
+Zmierzona różnica jasności między kafelkiem aktywnym a wygaszonym (OKLCH):
+czerwony 0.24, żółty 0.43, niebieski 0.14, zielony 0.27, biały 0.64.
+Niebieski jest najmniej czytelny z daleka — to wynika wprost z designu,
+bo jego aktywny kafelek jest ciemny.
 
 ## Ekran: Tablet gracza · Would You Press
 
