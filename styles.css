@@ -171,9 +171,9 @@ body {
 }
 
 /* Podpowiedź klawiszy stoi na końcu paska. Razem z nią pasek potrzebuje
-   do ~1440 px (tablet; instruktaż ~1395, quiz ~1315) — na węższych oknach
+   do ~1535 px (tablet; instruktaż ~1470, quiz ~1305) — na węższych oknach
    podpowiedź znika, żeby nie wyjeżdżała poza ekran. */
-@media (max-width: 1440px) {
+@media (max-width: 1540px) {
   .topbar-hint {
     display: none;
   }
@@ -361,57 +361,9 @@ body {
   gap: 64px;
 }
 
-/* Quiz/button-types — kadr 572×572, przycina cienie skorupy (overflow
-   clip jak w Figmie) */
-.qbtn {
-  position: relative;
-  flex-shrink: 0;
-  width: 572px;
-  height: 572px;
-  display: flex;
-  flex-direction: column;
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-/* QUIZ/button — turkusowa skorupa; te same tokeny co segmenty timera
-   (turquoise/925 → turquoise/700), tu pod kątem 25.339° */
-.qbtn-shell {
-  flex: 1 0 0;
-  min-height: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 16px;
-  border: 2px solid #040b0c;
-  border-radius: 999999px;
-  overflow: hidden;
-  background-image: linear-gradient(
-    25.339deg,
-    var(--shell-from) 31.869%,
-    var(--shell-to) 82.986%
-  );
-  box-shadow: var(--answer-shell-shadow);
-}
-
-/* Rdzeń — jedyna część różniąca kolory; border i gradient z app.js */
-.qbtn-core {
-  flex: 1 0 0;
-  min-height: 0;
-  width: 100%;
-  border: 3px solid;
-  border-radius: 99999px;
-  opacity: 0.9;
-  overflow: hidden;
-  backdrop-filter: blur(7.5px);
-  box-shadow: var(--answer-shadow-glow);
-}
-
-/* Wariant czerwonego i zielonego: obwódka 6 px zamiast poświaty, bez blura */
-.qbtn-core.ring {
-  backdrop-filter: none;
-  box-shadow: var(--answer-shadow-ring);
-}
+/* Same przyciski (Quiz/button-types) opisane są niżej, razem z przyciskami
+   quizu — w Figmie to ten sam komponent, więc dzielą klasy `.qa*`.
+   Okrągły wariant to `.qa-round`, szukaj sekcji „WOULD YOU PRESS”. */
 
 /* ============================================================
    PANEL ŻYĆ (na tablecie gracza)
@@ -903,6 +855,42 @@ body {
   text-align: center;
   overflow-wrap: break-word;
   user-select: none;
+}
+
+/* ============================================================
+   PRZYCISKI „WOULD YOU PRESS” (tablet gracza)
+   W Figmie to ten sam komponent co odpowiedź w quizie
+   (Quiz/button-types), tylko okrągły i bez tekstu — dlatego korzysta
+   z tych samych klas `.qa*` wyżej i ma tę samą animację wciśnięcia.
+   Poniżej są wyłącznie różnice: rozmiar, zaokrąglenia i kąty gradientów
+   (kwadratowe pudełko daje inne kąty niż prostokątne w quizie).
+   Figma: plik feDfMhqinxZSqSzWsB7qFF, node 22-214 (domyślne)
+   i 23-240 (wciśnięte); kadr 572×572, rdzeń 540×540 na (16, 16).
+   ============================================================ */
+.qa-round {
+  flex-shrink: 0;
+  width: 572px;
+  height: 572px;
+  border-radius: 999px;
+  overflow: hidden; /* kadr przycina cienie skorupy, tak jak w Figmie */
+}
+
+.qa-round .qa-shell {
+  border-radius: 999999px;
+  background-image: linear-gradient(
+    25.339deg,
+    var(--shell-from) 31.869%,
+    var(--shell-to) 82.986%
+  );
+}
+
+.qa-round .qa-shell::before {
+  background: linear-gradient(9.46deg, #040b0c 2.37%, rgba(205, 143, 29, 0.52) 119.88%);
+}
+
+.qa-round .qa-core {
+  padding: 0; /* w środku nie ma tekstu */
+  border-radius: 99999px;
 }
 
 /* Pasek czasu (Timer bar, node 2168-701): 1424×45 na (723, 1690).

@@ -93,9 +93,11 @@ const ROUNDS = [
 const INTER_ROUND_PAUSE_MS = 600;
 
 /* ============================================================
-   WIDOK: TABLET GRACZA
-   Figma: plik UCzHnyMnTZ2AS0PnYsw6eR, node 1935-11833 („odpowiedzi”).
-   Widok statyczny — kolejne stany designu dojdą później.
+   WIDOK: TABLET GRACZA — gra „Would You Press”
+   Figma: plik UCzHnyMnTZ2AS0PnYsw6eR, node 1935-11833 („odpowiedzi”);
+   kolory samych przycisków są nowsze i pochodzą z pliku
+   feDfMhqinxZSqSzWsB7qFF (node 22-214 i 23-240).
+   Ekran nie ma własnego zegara — żyje wciskaniem przycisków i życiami.
    ============================================================ */
 
 /* Tło (warstwa „zagadka”) — rozciągnięcie wg Figmy */
@@ -104,17 +106,60 @@ const TABLET_BG = { src: "assets/bg-tablet.png", w: 100.91, h: 100.02, top: -0.0
 /* Punkty (node 1935-11840): Caudex 72 px, tracking 3.6, środek u góry */
 const POINTS = { value: "300", top: 91 };
 
-/* Przyciski odpowiedzi (Frame 146): 4 × 572 px, odstęp 64 px, rząd
+/* Przyciski „Would You Press” (Frame 146): 4 × 572 px, odstęp 64 px, rząd
    wyśrodkowany w scenie, 43 px nad jej środkiem.
-   Skorupa i geometria są wspólne (komponent Quiz/button-types) —
-   różni je tylko kolor rdzenia, więc tylko to trzymamy w tablicy.
-   `ring` = wariant cienia z obwódką 6 px zamiast rozmytej poświaty
-   (w Figmie mają go czerwony i zielony; te dwa nie mają też blura). */
+   To ten sam komponent co odpowiedzi w quizie (Quiz/button-types), tylko
+   okrągły, więc i tu każdy kolor ma dwie twarze: domyślną i wciśniętą.
+   Figma: plik feDfMhqinxZSqSzWsB7qFF, node 22-214 (domyślne) i 23-240
+   (wciśnięte). Kąty gradientów są inne niż w quizie, bo przycisk jest
+   kwadratowy — te same wypełnienia liczą się od proporcji pudełka.
+   `ring` = obwódka 6 px zamiast rozmytej poświaty i bez blura
+   (czerwony i zielony). */
 const ANSWERS = [
-  { id: "red",    border: "#b11719", angle: 2.4514, from: "#110102", fromAt: "8.4863%", to: "#a11214", toAt: "366.25%", ring: true },
-  { id: "yellow", border: "#f6e472", angle: 5.5927, from: "#141302", fromAt: "12.611%", to: "#76670c", toAt: "271.55%", ring: false },
-  { id: "blue",   border: "#1e57e6", angle: 2.3351, from: "#0e0f4a", fromAt: "6.4769%", to: "#1e57e6", toAt: "285.21%", ring: false },
-  { id: "green",  border: "#0fcd4e", angle: 0.5993, from: "#021605", fromAt: "10.083%", to: "#2dd01e", toAt: "477.01%", ring: true },
+  {
+    id: "red", ring: true,
+    light: {
+      fill: "linear-gradient(10.507deg, #8f1616 -17.57%, #230606 158.65%)", // red/700 → red/950
+      stroke: "linear-gradient(132.8deg, #b11719 16.61%, #210405 53.21%)", // red/600 → ciemny
+    },
+    dark: {
+      fill: "linear-gradient(1.814deg, #3c0707 -120.19%, #230606 98.41%)", // red/900 → red/950
+      stroke: "linear-gradient(132.8deg, #8f1616 16.61%, #210405 53.21%)", // red/700 → ciemny
+    },
+  },
+  {
+    id: "yellow", ring: false,
+    light: {
+      fill: "linear-gradient(180deg, #1a1804 -92.71%, #76670c 100%)", // yellow/900 → yellow/700
+      stroke: "linear-gradient(120.305deg, #ceb935 5.69%, #1a1804 57.37%)", // yellow/500 → yellow/900
+    },
+    dark: {
+      fill: "linear-gradient(180.876deg, #141302 -15.97%, #383106 186.94%)", // yellow/960 → ciemna oliwka
+      stroke: "linear-gradient(120.305deg, #76670c 5.69%, #1a1804 57.37%)", // yellow/700 → yellow/900
+    },
+  },
+  {
+    id: "blue", ring: false,
+    light: {
+      fill: "linear-gradient(0.728deg, #113aa2 -9.25%, #060c23 189.65%)", // dark-blue/600 → dark-blue/800
+      stroke: "linear-gradient(180.531deg, #1e57e6 -34%, #060c23 67.01%)", // dark-blue/500 → dark-blue/800
+    },
+    dark: {
+      fill: "linear-gradient(360deg, #0e0f4a -41.57%, #060c23 130.57%)", // dark-blue/700 → dark-blue/800
+      stroke: "linear-gradient(160.935deg, #1e57e6 19.57%, #020317 92.62%)", // dark-blue/500 → ciemny
+    },
+  },
+  {
+    id: "green", ring: true,
+    light: {
+      fill: "linear-gradient(180.31deg, #0d2805 -97.61%, #19980e 132.69%)", // green/900 → green/700
+      stroke: "linear-gradient(150.551deg, #0fcd4e 9.1%, #042108 55.86%)",
+    },
+    dark: {
+      fill: "linear-gradient(183.92deg, #021605 5.28%, #0d2805 129.84%)", // green/950 → green/900
+      stroke: "linear-gradient(150.551deg, #19980e 9.1%, #042108 55.86%)", // green/700 → ciemny
+    },
+  },
 ];
 
 /* Panel żyć (node 1935-11875 „życia”). Pozycja 1:1 z Dev Mode,
@@ -288,7 +333,7 @@ const DEFAULT_QUIZ_VERSION = "v1.2";
    ============================================================ */
 const VIEWS = [
   { id: "instruktaz", label: "Instruktaż",           build: buildInstruktaz },
-  { id: "tablet",     label: "Tablet gracza",        build: buildTablet },
+  { id: "tablet",     label: "Tablet gracza · Would You Press", build: buildTablet },
   { id: "quiz",       label: "Tablet gracza · quiz", build: buildQuiz },
 ];
 const DEFAULT_VIEW = "instruktaz";
@@ -296,7 +341,7 @@ const DEFAULT_VIEW = "instruktaz";
 /* Podpowiedzi klawiszowe — inne dla każdego widoku */
 const HINTS = {
   instruktaz: "spacja — pauza · ←/→ — runda · R — restart",
-  tablet: "Z — tracisz życie (z animacją) · 0–3 — skok do stanu · R — restart",
+  tablet: "kliknij przycisk · Z — tracisz życie · 0–3 — skok do stanu · R — restart",
   quiz: "kliknij odpowiedź · spacja — pauza · R — od nowa · 1–3 — wersja",
 };
 
@@ -343,6 +388,7 @@ const layerEl = document.createElement("div"); // warstwa timera (tylko instrukt
 let textEl = null;
 let litElements = []; // [{ el, threshold }]
 let lifeEls = []; // kryształy w panelu żyć, od lewej
+let answerEls = []; // okrągłe przyciski „Would You Press” (tablet gracza)
 let quizEls = null; // { grid, bar, answers } — tylko na widoku quizu
 let currentViewId = DEFAULT_VIEW;
 let currentVersionId = DEFAULT_VERSION;
@@ -495,25 +541,49 @@ function buildInstruktaz(root) {
    TABLET GRACZA — punkty, przyciski odpowiedzi, panel żyć
    ============================================================ */
 
-/* Przycisk odpowiedzi (Quiz/button-types): kadr → skorupa → rdzeń.
-   Kadr i skorupa są dla wszystkich takie same, kolorem różni się rdzeń. */
+/* Przycisk „Would You Press”: ten sam komponent co odpowiedź w quizie,
+   tylko okrągły — te same klasy CSS, więc i ta sama animacja wciśnięcia.
+   Rdzeń ma dwie twarze: domyślną i wciśniętą, która wchodzi przejściem
+   krycia (kolory wstawiamy jako zmienne CSS). */
 function makeAnswer(cfg) {
-  const btn = document.createElement("div");
-  btn.className = "qbtn";
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "qa qa-round";
   btn.dataset.answer = cfg.id;
+  btn.setAttribute("aria-pressed", "false");
 
-  const shell = document.createElement("div");
-  shell.className = "qbtn-shell";
+  btn.style.setProperty("--qa-fill", asImage(cfg.light.fill));
+  btn.style.setProperty("--qa-stroke", asImage(cfg.light.stroke));
+  btn.style.setProperty("--qa-fill-pressed", asImage(cfg.dark.fill));
+  btn.style.setProperty("--qa-stroke-pressed", asImage(cfg.dark.stroke));
 
-  const core = document.createElement("div");
-  core.className = "qbtn-core" + (cfg.ring ? " ring" : "");
-  core.style.borderColor = cfg.border;
-  core.style.backgroundImage =
-    `linear-gradient(${cfg.angle}deg, ${cfg.from} ${cfg.fromAt}, ${cfg.to} ${cfg.toAt})`;
+  btn.innerHTML =
+    `<span class="qa-shell"><span class="qa-core${cfg.ring ? " ring" : ""}">` +
+    `<span class="qa-face"></span><span class="qa-face qa-face-pressed"></span>` +
+    `</span></span>`;
 
-  shell.appendChild(core);
-  btn.appendChild(shell);
+  /* Sterowanie jak w quizie: wybór na dotknięcie, bez fokusu po myszy */
+  btn.addEventListener("pointerdown", (e) => {
+    if (e.button === 0) pressAnswer(cfg.id);
+  });
+  btn.addEventListener("mousedown", (e) => e.preventDefault());
+  btn.addEventListener("click", (e) => {
+    if (e.detail === 0) pressAnswer(cfg.id);
+  });
   return btn;
+}
+
+/* Wciśnięty przycisk: jeden naraz, jak odpowiedź w quizie. Przy zerze żyć
+   gracz nic nie wciśnie — ekran mówi „Poczekaj do końca rundy”. */
+function pressAnswer(id) {
+  if (state.lives === 0) return;
+  answerEls.forEach((el) => {
+    el.setAttribute("aria-pressed", String(el.dataset.answer === id));
+  });
+}
+
+function clearPressedAnswer() {
+  answerEls.forEach((el) => el.setAttribute("aria-pressed", "false"));
 }
 
 /* Panel żyć: etykieta „Twoje życia:” + ramka z kryształami w środku */
@@ -564,7 +634,11 @@ function buildTablet(root) {
 
   const row = document.createElement("div");
   row.className = "tablet-answers";
-  ANSWERS.forEach((cfg) => row.appendChild(makeAnswer(cfg)));
+  answerEls = ANSWERS.map((cfg) => {
+    const el = makeAnswer(cfg);
+    row.appendChild(el);
+    return el;
+  });
   root.appendChild(row);
 
   buildLives(root);
@@ -681,6 +755,7 @@ function mountView(id) {
   layerEl.remove();
   litElements = [];
   lifeEls = [];
+  answerEls = [];
   quizEls = null;
   textEl = null;
 
@@ -1051,8 +1126,8 @@ function tickQuiz(now) {
 }
 
 function tick(now) {
-  /* Zegar chodzi tylko na widokach, które go mają — tablet z życiami
-     jest statyczny */
+  /* Zegar chodzi tylko na widokach, które go mają — Would You Press
+     nie odlicza czasu */
   if (currentViewId === "instruktaz") tickInstruktaz(now);
   else if (currentViewId === "quiz") tickQuiz(now);
 
@@ -1084,6 +1159,7 @@ window.addEventListener("keydown", (e) => {
     case "KeyR":
       state.paused = false;
       setLives(LIVES.max);
+      clearPressedAnswer();
       startRound(0);
       if (currentViewId === "quiz") startQuestion();
       break;

@@ -13,7 +13,7 @@ pozycje.
 | Widok | Co pokazuje |
 | --- | --- |
 | **Instruktaż** | ekran wspólny: treść zadania + timer rundy |
-| **Tablet gracza** | ekran w rękach gracza: punkty, 4 okrągłe przyciski, panel żyć |
+| **Tablet gracza · Would You Press** | ekran w rękach gracza: punkty, 4 okrągłe przyciski do wciskania, panel żyć |
 | **Tablet gracza · quiz** | pytanie, 4 odpowiedzi 2×2 z animacją wciśnięcia, pasek czasu |
 
 Można wysłać link prosto do jednego ekranu, dopisując `?view=` do adresu:
@@ -44,17 +44,28 @@ Wersję też można wskazać w adresie: `?v=v1`, `?v=v2a`, `?v=v2b`, `?v=v3a`
 W każdej wersji pełny timer = koniec czasu rundy (domyślnie 4500 ms), potem
 600 ms pauzy i następna runda; po piątej rundzie prototyp zapętla się od nowa.
 
-## Ekran: Tablet gracza
+## Ekran: Tablet gracza · Would You Press
 
-Na razie **statyczny** — odwzorowanie designu, bez klikania w odpowiedzi.
-Ruchome są tylko życia i ekran końca gry (do pokazywania stanów).
+Ekran gry **Would You Press**: cztery duże, okrągłe przyciski, punkty
+i panel żyć.
 
 - **Punkty** — na sztywno `300` (stała `POINTS` w `app.js`).
-- **Cztery przyciski odpowiedzi** — czerwony, żółty, niebieski, zielony.
-  Geometria i turkusowa skorupa są wspólne; kolory rdzeni siedzą w tablicy
-  `ANSWERS`.
+- **Cztery przyciski** — czerwony, żółty, niebieski, zielony. Każdy ma dwie
+  twarze: domyślną (jaśniejszą) i wciśniętą (ciemną), jak odpowiedzi
+  w quizie. Kolory siedzą w tablicy `ANSWERS` w `app.js`.
+- **Wciśnięcie** — kliknięcie (dotknięcie) wciska przycisk: ten sam ruch co
+  w quizie, czyli przejście w ciemną twarz i zmniejszenie do 98 % rozmiaru,
+  przy którym przycisk zostaje. Wciśnięty jest jeden naraz; kliknięcie
+  innego przenosi wybór, a `R` czyści. Przy zerze żyć przyciski nie reagują
+  — ekran mówi wtedy „Poczekaj do końca rundy".
 - **Panel żyć** — „Twoje życia:" + trzy kryształy. Liczbę żyć zmienia się
   w pasku (`3 / 2 / 1 / 0`) albo klawiszami.
+
+W Figmie przyciski Would You Press i odpowiedzi w quizie to **ten sam
+komponent** (`Quiz/button-types`), tylko raz okrągły, a raz prostokątny —
+dlatego w kodzie dzielą klasy `.qa*`, a okrągły wariant to `.qa-round`.
+Te same wypełnienia mają w obu ekranach inne kąty gradientów, bo kąt liczy
+się od proporcji pudełka.
 
 ### Stan „brak żyć"
 
@@ -148,7 +159,7 @@ ale siedzą w historii gita (commit `d56814d`), więc da się je przywrócić.
 | --- | --- |
 | `Spacja` | pauza / wznowienie (instruktaż i quiz) |
 | `→` / `←` | następna / poprzednia runda |
-| `R` | restart: runda 1 i pełne życia; w quizie pytanie od nowa |
+| `R` | restart: runda 1, pełne życia, zwolniony przycisk; w quizie pytanie od nowa |
 | `1`–`5` | wersja timera (na instruktażu) |
 | `1`–`5` | wersja animacji wciśnięcia (w quizie) |
 | `0`–`3` | skok wprost do stanu żyć (na tablecie, bez animacji) |
@@ -180,10 +191,12 @@ w `assets/`:
 - **Instruktaż V2** — plik `UCzHnyMnTZ2AS0PnYsw6eR`, node `1823-2387`:
   dwie kolumny po 16 pigułek (328×83, rozstaw 103 px, start y = 77);
   w tym wariancie designu nie ma panelu ani narożników.
-- **Tablet gracza** — plik `UCzHnyMnTZ2AS0PnYsw6eR`, node `1935-11833`
-  („odpowiedzi"): tło `bg-tablet.png`, punkty (Caudex 72 px, tracking 3.6),
-  rząd 4 przycisków 572×572 co 636 px, panel żyć (node `1935-11875`)
-  na pozycji 1136,1 × 1313.
+- **Tablet gracza · Would You Press** — plik `UCzHnyMnTZ2AS0PnYsw6eR`, node
+  `1935-11833` („odpowiedzi"): tło `bg-tablet.png`, punkty (Caudex 72 px,
+  tracking 3.6), rząd 4 przycisków 572×572 co 636 px, panel żyć
+  (node `1935-11875`) na pozycji 1136,1 × 1313. **Kolory przycisków** są
+  nowsze i pochodzą z drugiego pliku (`feDfMhqinxZSqSzWsB7qFF`): node
+  `22-214` (domyślne) i `23-240` (wciśnięte).
 - **Tablet gracza, brak żyć** — ten sam plik, node `1936-11876`: przyciski
   na 40 % krycia, pusty kryształ (`life-empty.svg`, node `1936-11886`)
   i komunikat (Frame 165) 1772×360 na środku sceny.
