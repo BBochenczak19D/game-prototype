@@ -592,7 +592,8 @@ body {
   .life.losing .life-full,
   .life.losing::before,
   .res-tile.pulse,
-  .pod-col.shown {
+  .pod-col.shown .pod-badge,
+  .pod-col.named .pod-text {
     animation-duration: 1ms !important;
   }
 
@@ -844,17 +845,16 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 64px;
-  opacity: 0;
-  transform-origin: 50% 100%; /* rosną od podstawy, jak puchary */
-  will-change: transform, opacity;
 }
 
 .pod-col.first {
   width: 638.584px;
 }
 
-/* Pojawienie się: wskok z dołu ze scale up i spokojnym domknięciem */
-.pod-col.shown {
+/* Plakietka wchodzi pierwsza: wskok z dołu ze scale up i spokojnym
+   domknięciem. Imię i punkty dochodzą chwilę później — kolejność
+   ustawiają budziki w app.js (klasy `shown` i `named`). */
+.pod-col.shown .pod-badge {
   opacity: 1;
   animation: pod-in var(--pod-dur, 900ms) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -866,11 +866,25 @@ body {
   100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+.pod-col.named .pod-text {
+  opacity: 1;
+  animation: pod-text-in var(--pod-text-dur, 700ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes pod-text-in {
+  0%   { opacity: 0; transform: translateY(32px) scale(0.9); }
+  60%  { opacity: 1; transform: translateY(0) scale(1.05); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 /* Plakietka: pole z Figmy, a w nim dwa wektory i numer na wierzchu */
 .pod-badge {
   position: relative;
   width: 357px;
   height: 370px;
+  opacity: 0;
+  transform-origin: 50% 100%; /* rośnie od podstawy, jak puchar */
+  will-change: transform, opacity;
 }
 
 .pod-col.first .pod-badge {
@@ -946,6 +960,9 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 12px;
+  opacity: 0;
+  transform-origin: 50% 0;
+  will-change: transform, opacity;
 }
 
 .pod-name,

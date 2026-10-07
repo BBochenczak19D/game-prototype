@@ -118,22 +118,24 @@ Animacja jest autorska; w Figmie jest tylko stan końcowy kroku 2.
 
 ### Przebieg V2 — najpierw podium, potem tabela
 
-1. Na osobnym ekranie (design: node `2307-61203`) wskakują plakietki
-   **3 → 2 → 1** — każda z dołu, ze scale up i spokojnym domknięciem.
-   Pod plakietką od razu jest imię i liczba punktów.
-2. Gotowe podium stoi ok. **3 s**, a potem cały ekran gaśnie w górę.
-3. Tabela wjeżdża **od samej góry**, wiersz po wierszu od 1. do 6. miejsca.
-   W tej wersji **imiona i wyniki są widoczne od razu** — niespodziankę
-   zrobiło już podium — a tytuł „Wyniki" wraca razem z tabelą (na ekranie
-   podium go nie ma, tak jak w Figmie).
+1. Na osobnym ekranie (design: node `2307-61203`) miejsca pojawiają się
+   po kolei **3 → 2 → 1**, a każde w dwóch krokach: najpierw sama
+   **plakietka z numerem** (wskok z dołu, scale up i spokojne domknięcie),
+   a **0,55 s później imię gracza i punkty**. Dopiero potem rusza
+   następne miejsce.
+2. Gotowe podium stoi ok. **3,8 s**, a potem cały ekran gaśnie w górę.
+3. Tabela wjeżdża **z prawej, tak jak w V1**, wiersz po wierszu od 1. do
+   6. miejsca. W tej wersji **imiona i wyniki są widoczne od razu** —
+   niespodziankę zrobiło już podium — a tytuł „Wyniki" wraca razem
+   z tabelą (na ekranie podium go nie ma, tak jak w Figmie).
 
-### Trzy tempa do porównania
+### Trzy warianty do porównania
 
 | Wersja | Długość | Czym się różni |
 | --- | --- | --- |
 | **V1 · wolna** | ok. 13,5 s | pełne odsłanianie podium w tabeli |
 | **V1 · bardzo wolna** | ok. 17 s | ten sam przebieg, dłuższe wjazdy i pauzy |
-| **V2 · podium najpierw** | ok. 10 s | ekran podium, przejście, tabela z góry |
+| **V2 · podium najpierw** | ok. 13,5 s | ekran podium, przejście, tabela z prawej |
 
 Wszystkie czasy (wjazd, odstępy, pauzy, wylot, zjazd na środek) siedzą
 w `RESULTS_VERSIONS` w `app.js` — każdy jako osobna liczba, więc da się

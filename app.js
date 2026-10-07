@@ -238,10 +238,11 @@ const RESULTS = {
       zjeżdża na środek listy i delikatnie się powiększa.
 
    kind: "podium" (V2) — najpierw celebracja, potem tabela:
-   1. na ekranie podium wskakują plakietki 3 → 2 → 1 (scale up/down),
+   1. na ekranie podium wskakuje sama plakietka 3. miejsca (scale up/down),
+      chwilę po niej imię i punkty; potem tak samo 2. miejsce i 1.,
    2. gotowe podium stoi chwilę i gaśnie w górę,
-   3. tabela zjeżdża od samej góry, wiersz po wierszu, z imionami
-      i punktami widocznymi od razu. */
+   3. tabela wjeżdża z prawej, tak jak w V1, wiersz po wierszu od góry,
+      z imionami i punktami widocznymi od razu. */
 const RESULTS_VERSIONS = [
   {
     id: "v1-wolna", label: "V1 · wolna", kind: "table",
@@ -277,15 +278,17 @@ const RESULTS_VERSIONS = [
   },
   {
     id: "v2", label: "V2 · podium najpierw", kind: "podium",
-    title: "Najpierw ekran podium (3 → 2 → 1), potem tabela wjeżdżająca z góry (ok. 10 s)",
+    title: "Najpierw ekran podium (3 → 2 → 1), potem tabela wjeżdżająca z prawej (ok. 13,5 s)",
     timing: {
-      padWait: 600,                      // pauza przed pierwszą plakietką
-      padDur: 900,                       // pojawienie się jednej plakietki
-      padGap: 1100,                      // odstęp 3 → 2 → 1
-      padHold: 3200,                     // ile stoi gotowe podium
-      fadeDur: 800,                      // znikanie ekranu podium
-      tableWait: 250,                    // chwila przed wjazdem tabeli
-      enterDur: 950, enterStagger: 180,  // wjazd wierszy z góry
+      padWait: 700,                      // pauza przed pierwszą plakietką
+      padDur: 1100,                      // pojawienie się samej plakietki
+      textDelay: 550,                    // o tyle imię i punkty są później niż plakietka
+      textDur: 700,                      // pojawienie się imienia i punktów
+      padGap: 1700,                      // odstęp 3 → 2 → 1 (od plakietki do plakietki)
+      padHold: 3800,                     // ile stoi gotowe podium
+      fadeDur: 1000,                     // znikanie ekranu podium
+      tableWait: 350,                    // chwila przed wjazdem tabeli
+      enterDur: 1200, enterStagger: 320, // wjazd wierszy z prawej
     },
   },
 ];
@@ -1043,30 +1046,31 @@ function playResults() {
   else playResultsTable(version);
 }
 
-/* Stan wyjściowy zależy od wersji: tabela czeka za prawą krawędzią (V1)
-   albo nad ekranem (V2). W V2 imiona i wyniki są widoczne od razu,
-   a tytuł „Wyniki” wchodzi dopiero razem z tabelą. */
+/* W obu przebiegach tabela czeka za prawą krawędzią. Różnica jest w tym,
+   co widać od startu: V2 zaczyna od ekranu podium, więc imiona i wyniki
+   są w tabeli widoczne od razu, a tytuł „Wyniki” wchodzi dopiero z nią. */
 function resetResults(version) {
   const t = version.timing;
-  const zGory = version.kind === "podium";
+  const zPodium = version.kind === "podium";
 
-  podiumEl.classList.toggle("off", !zGory);
+  podiumEl.classList.toggle("off", !zPodium);
   podiumEl.classList.remove("hiding");
   podiumEl.style.setProperty("--pod-fade", (t.fadeDur || 700) + "ms");
   podiumCols.forEach((col) => {
-    col.classList.remove("shown");
+    col.classList.remove("shown", "named");
     col.style.setProperty("--pod-dur", (t.padDur || 900) + "ms");
+    col.style.setProperty("--pod-text-dur", (t.textDur || 700) + "ms");
   });
 
   const tytul = document.querySelector(".results-title");
-  if (tytul) tytul.classList.toggle("hidden-title", zGory);
+  if (tytul) tytul.classList.toggle("hidden-title", zPodium);
 
   resultEls.forEach((row) => {
     const tile = row.querySelector(".res-tile");
     row.classList.remove("leaving", "centered");
-    row.classList.toggle("revealed", zGory);
+    row.classList.toggle("revealed", zPodium);
     row.style.transitionDuration = "0ms";
-    row.style.transform = zGory ? "translateY(-1800px)" : "translateX(var(--res-off))";
+    row.style.transform = "translateX(var(--res-off))";
     tile.style.transitionDuration = "0ms";
     tile.style.transform = "none";
     tile.classList.remove("pulse");
@@ -1077,7 +1081,7 @@ function resetResults(version) {
 
   /* Dopiero po przeliczeniu układu wracamy do czasu przenikania imienia —
      inaczej restart pokazywałby, jak imiona z podium gasną. */
-  if (!zGory) resultEls.forEach((row) => row.style.setProperty("--res-name-dur", t.nameDur + "ms"));
+  if (!zPodium) resultEls.forEach((row) => row.style.setProperty("--res-name-dur", t.nameDur + "ms"));
 }
 
 /* V1: tabela od prawej, odsłanianie podium, zjazd na środek */
@@ -1135,25 +1139,31 @@ function playResultsTable(version) {
   );
 }
 
-/* V2 (node 2307-61203): najpierw celebracja na podium — plakietki 3, 2, 1
-   wskakują ze scale up/down — potem płynne przejście i tabela zjeżdżająca
-   z góry z już widocznymi imionami i punktami. */
+/* V2 (node 2307-61203): najpierw celebracja na podium — kolejno sama
+   plakietka ze scale up/down, a chwilę po niej imię i punkty — potem
+   płynne przejście i tabela wjeżdżająca z prawej, tak jak w V1. */
 function playResultsPodium(version) {
   const t = version.timing;
   const kolejnosc = [2, 1, 0]; // 3. miejsce, 2., zwycięzca
 
-  /* 1. plakietki pojawiają się po kolei */
-  kolejnosc.forEach((idx, k) =>
-    resultsAt(t.padWait + k * t.padGap, () => podiumCols[idx].classList.add("shown"))
-  );
-  let czas = t.padWait + 2 * t.padGap + t.padDur + t.padHold;
+  /* 1. miejsce po miejscu: najpierw kolor plakietki z numerem,
+        po chwili imię gracza z punktami */
+  kolejnosc.forEach((idx, k) => {
+    const start = t.padWait + k * t.padGap;
+    resultsAt(start, () => podiumCols[idx].classList.add("shown"));
+    resultsAt(start + t.textDelay, () => podiumCols[idx].classList.add("named"));
+  });
+  /* ostatnia kolumna jest gotowa, gdy skończy się to, co trwa dłużej:
+     sama plakietka albo opóźnione imię */
+  const kolumnaDur = Math.max(t.padDur, t.textDelay + t.textDur);
+  let czas = t.padWait + 2 * t.padGap + kolumnaDur + t.padHold;
 
-  /* 2. cały ekran podium gaśnie — delikatnie w dół i do zera */
+  /* 2. cały ekran podium gaśnie — delikatnie w górę i do zera */
   resultsAt(czas, () => podiumEl.classList.add("hiding"));
   czas += t.fadeDur;
   resultsAt(czas, () => podiumEl.classList.add("off"));
 
-  /* 3. tytuł wraca, a tabela zjeżdża od samej góry, wiersz po wierszu */
+  /* 3. tytuł wraca, a tabela wjeżdża z prawej, wiersz po wierszu od góry */
   czas += t.tableWait;
   resultsAt(czas, () => {
     const tytul = document.querySelector(".results-title");
@@ -1162,7 +1172,7 @@ function playResultsPodium(version) {
   resultEls.forEach((row, k) =>
     resultsAt(czas + k * t.enterStagger, () => {
       row.style.transitionDuration = t.enterDur + "ms";
-      row.style.transform = "translateY(0)";
+      row.style.transform = "translateX(0)";
     })
   );
 }
