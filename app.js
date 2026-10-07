@@ -241,8 +241,8 @@ const RESULTS = {
    1. na ekranie podium wskakuje sama plakietka 3. miejsca (scale up/down),
       chwilę po niej imię i punkty; potem tak samo 2. miejsce i 1.,
    2. gotowe podium stoi chwilę i gaśnie w górę,
-   3. tabela wjeżdża z prawej, tak jak w V1, wiersz po wierszu od góry,
-      z imionami i punktami widocznymi od razu. */
+   3. tabela wjeżdża z prawej, tak jak w V1 — od dołu w górę, jednym
+      ciągiem — z imionami i punktami widocznymi od razu. */
 const RESULTS_VERSIONS = [
   {
     id: "v1-wolna", label: "V1 · wolna", kind: "table",
@@ -1163,13 +1163,15 @@ function playResultsPodium(version) {
   czas += t.fadeDur;
   resultsAt(czas, () => podiumEl.classList.add("off"));
 
-  /* 3. tytuł wraca, a tabela wjeżdża z prawej, wiersz po wierszu od góry */
+  /* 3. tytuł wraca, a tabela wjeżdża z prawej na swoje miejsca — od dołu
+        w górę, jednym ciągiem, tak jak na storyboardzie animacji */
   czas += t.tableWait;
   resultsAt(czas, () => {
     const tytul = document.querySelector(".results-title");
     if (tytul) tytul.classList.remove("hidden-title");
   });
-  resultEls.forEach((row, k) =>
+  const odDolu = resultEls.slice().reverse(); // 6. miejsce startuje pierwsze
+  odDolu.forEach((row, k) =>
     resultsAt(czas + k * t.enterStagger, () => {
       row.style.transitionDuration = t.enterDur + "ms";
       row.style.transform = "translateX(0)";

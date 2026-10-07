@@ -124,8 +124,9 @@ Animacja jest autorska; w Figmie jest tylko stan końcowy kroku 2.
    a **0,55 s później imię gracza i punkty**. Dopiero potem rusza
    następne miejsce.
 2. Gotowe podium stoi ok. **3,8 s**, a potem cały ekran gaśnie w górę.
-3. Tabela wjeżdża **z prawej, tak jak w V1**, wiersz po wierszu od 1. do
-   6. miejsca. W tej wersji **imiona i wyniki są widoczne od razu** —
+3. Tabela wjeżdża **z prawej na swoje miejsca, tak jak w V1** — od dołu
+   w górę (6. miejsce rusza pierwsze), jednym ciągiem, bez przerwy przed
+   podium. W tej wersji **imiona i wyniki są widoczne od razu** —
    niespodziankę zrobiło już podium — a tytuł „Wyniki" wraca razem
    z tabelą (na ekranie podium go nie ma, tak jak w Figmie).
 
