@@ -590,11 +590,14 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .life.losing,
   .life.losing .life-full,
-  .life.losing::before {
+  .life.losing::before,
+  .res-tile.pulse {
     animation-duration: 1ms !important;
   }
 
-  .qa {
+  .qa,
+  .res-row,
+  .res-tile {
     transition-duration: 1ms;
   }
 }
@@ -652,6 +655,149 @@ body {
 @keyframes nolives-in {
   from { opacity: 0; transform: translate(-50%, calc(-50% + 24px)); }
   to   { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+/* ============================================================
+   WYNIKI (ekran wspólny) — tabela wyników z animacją
+   Figma: plik UCzHnyMnTZ2AS0PnYsw6eR, node 2305-61159.
+   Geometria 1:1 z Dev Mode: panel 2353×1544 na (263.5, 128), tytuł
+   144 px, lista 1312 px od y 232, wiersze 2353×192 co 32 px.
+   Sam przebieg animacji jest autorski — w Figmie jest tylko stan.
+   ============================================================ */
+
+/* Przesłona nad tłem instruktażu. Przycina też kafelki, które w trakcie
+   animacji stoją poza ekranem. */
+.results {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: rgba(2, 2, 2, 0.51);
+  /* o tyle kafelek stoi za krawędzią przed wjazdem i po wylocie */
+  --res-off: 2650px;
+}
+
+.results-panel {
+  position: absolute;
+  left: 263.5px;
+  top: 128px;
+  width: 2353px;
+  height: 1544px;
+}
+
+/* Tytuł: Noto Sans Bold 96 px, tracking 5 %, w Figmie z ciemnym obrysem
+   4 px na zewnątrz liter (stąd podwójna grubość i paint-order). */
+.results-title {
+  height: 144px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Noto Sans", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 96px;
+  line-height: 1.5;
+  letter-spacing: 4.8px;
+  color: var(--text);
+  -webkit-text-stroke: 8px rgba(42, 22, 2, 0.5);
+  paint-order: stroke fill;
+  -webkit-font-smoothing: antialiased; /* jak w quizie — bez tego litery są grubsze niż w Figmie */
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+}
+
+.results-rows {
+  position: absolute;
+  top: 232px;
+  left: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* Wiersz odpowiada za ruch w poziomie: wjazd z prawej i wylot w lewo */
+.res-row {
+  width: 100%;
+  transform: translateX(var(--res-off));
+  transition: transform 520ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.res-row.leaving {
+  transition-timing-function: cubic-bezier(0.7, 0, 0.84, 0);
+}
+
+/* Kafelek odpowiada za wygląd, puls przy odsłonięciu i zjazd na środek.
+   Obrysy leżą w środku i bywają gradientowe, więc idą drugą warstwą tła
+   pod przezroczystym borderem; padding jest pomniejszony o obrys, bo
+   w Figmie obrys nie zajmuje miejsca w układzie. */
+.res-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 192px;
+  border: 8px solid transparent;
+  border-radius: 36px;
+  padding: 16px 56px; /* 24 / 64 minus obrys 8 */
+  background: var(--tile-fill) padding-box, var(--tile-stroke) border-box;
+  transition: transform 760ms cubic-bezier(0.34, 1.1, 0.64, 1);
+  will-change: transform;
+}
+
+.res-row.podium .res-tile {
+  border-width: 6px;
+  border-radius: 42px;
+  padding: 18px 58px; /* 24 / 64 minus obrys 6 */
+  box-shadow: -5px 6px 4px 0 #061015, -10px 10px 52px 0 #051114;
+}
+
+.res-name,
+.res-score {
+  font-family: "Noto Sans", system-ui, sans-serif;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--text);
+  white-space: nowrap;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+}
+
+.res-name {
+  font-size: 72px;
+}
+
+/* Podium wjeżdża bez imienia — niespodzianka do momentu odsłonięcia */
+.res-row.podium .res-name {
+  opacity: 0;
+  transition: opacity var(--res-name-dur, 420ms) ease-out;
+}
+
+.res-row.podium.revealed .res-name {
+  opacity: 1;
+}
+
+/* tracking dokłada odstęp także po ostatniej cyfrze — odejmujemy go,
+   żeby wynik kończył się tam, gdzie w Figmie */
+.res-score {
+  font-size: 96px;
+  letter-spacing: 4.8px;
+  margin-right: -4.8px;
+}
+
+.res-row.podium .res-score {
+  letter-spacing: 9.6px;
+  margin-right: -9.6px;
+}
+
+/* Odsłonięcie imienia: delikatny scale up/down na całym kafelku */
+.res-tile.pulse {
+  animation: res-pulse var(--res-pulse-dur, 760ms) cubic-bezier(0.3, 0, 0.3, 1);
+}
+
+@keyframes res-pulse {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.04); }
+  100% { transform: scale(1); }
 }
 
 /* --- Tekst zadania: Caudex Bold 160px, beige/500, środek sceny --- */

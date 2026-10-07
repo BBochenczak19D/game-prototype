@@ -15,6 +15,7 @@ pozycje.
 | **Instruktaż** | ekran wspólny: treść zadania + timer rundy |
 | **Tablet gracza · Would You Press** | ekran w rękach gracza: punkty, 4 okrągłe przyciski do wciskania, panel żyć |
 | **Tablet gracza · quiz** | pytanie, 4 odpowiedzi 2×2 z animacją wciśnięcia, pasek czasu |
+| **Instruktaż · wyniki** | tabela wyników z animacją odsłaniania podium (ekran wspólny po grze) |
 
 Można wysłać link prosto do jednego ekranu, dopisując `?view=` do adresu:
 `?view=instruktaz`, `?view=tablet`, `?view=quiz`. Wybór zapamiętuje się
@@ -89,6 +90,47 @@ Zmierzona różnica jasności między kafelkiem aktywnym a wygaszonym (OKLCH):
 czerwony 0.24, żółty 0.43, niebieski 0.14, zielony 0.27, biały 0.64.
 Niebieski jest najmniej czytelny z daleka — to wynika wprost z designu,
 bo jego aktywny kafelek jest ciemny.
+
+## Ekran: Instruktaż · wyniki
+
+Tabela wyników po grze, na ekranie wspólnym: tło instruktażu przykryte
+przesłoną, tytuł „Wyniki" i sześć wierszy — trzy miejsca podium (złoty,
+srebrny, brązowy) i trzy pozostałe (turkusowe).
+
+Imiona i wyniki siedzą w `RESULTS` w `app.js`. W Figmie wszyscy nazywają
+się „Adam" (placeholder), tutaj mają różne imiona — inaczej odsłanianie
+podium nie miałoby sensu.
+
+### Przebieg animacji (V1)
+
+1. Od dołu, od prawej wjeżdżają miejsca **6, 5, 4** — jedno po drugim.
+2. Tak samo wjeżdża podium (**3, 2, 1**), ale **bez imion** — do tego
+   momentu nie wiadomo, kto wygrał. Sam design z Figmy pokazuje dokładnie
+   ten stan: imiona na podium mają tam krycie 0.
+3. Po pauzie odsłania się imię na **3. miejscu**, a cały kafelek robi
+   delikatny scale up / down. Po odstępie to samo dzieje się na **2.**,
+   na końcu na **1.**
+4. Miejsca spoza podium **wylatują w lewo** za ekran — dalej tą samą drogą,
+   którą przyjechały — a podium **po kolei zjeżdża na środek** i delikatnie
+   rośnie (do 106 %).
+
+Animacja jest autorska; w Figmie jest tylko stan końcowy kroku 2.
+
+### Dwa tempa do porównania
+
+| Wersja | Długość | Czym się różni |
+| --- | --- | --- |
+| **V1 · standardowa** | ok. 8,5 s | pauzy dobrane tak, żeby dało się śledzić, ale bez dłużyzn |
+| **V1 · wolniejsza** | ok. 12,7 s | dłuższe pauzy, zwłaszcza między odsłonięciami podium |
+
+Wszystkie czasy (wjazd, odstępy, pauzy, wylot, zjazd na środek) siedzą
+w `RESULTS_VERSIONS` w `app.js` — każdy jako osobna liczba, więc da się
+dostroić pojedynczy etap bez ruszania reszty. Kolejne warianty ruchu
+dojdą jako następne wpisy w tej samej tablicy.
+
+Wersję przełącza się w pasku, klawiszami `1` / `2` albo w adresie:
+`?view=wyniki&wyniki=v1`, `…&wyniki=v1-wolna`. Przycisk **▶ od nowa**
+(albo klawisz `R`) odtwarza całość jeszcze raz.
 
 ## Ekran: Tablet gracza · Would You Press
 
@@ -205,9 +247,10 @@ ale siedzą w historii gita (commit `d56814d`), więc da się je przywrócić.
 | --- | --- |
 | `Spacja` | pauza / wznowienie (instruktaż i quiz) |
 | `→` / `←` | następna / poprzednia runda |
-| `R` | restart: runda 1, pełne życia, zwolniony przycisk; w quizie pytanie od nowa |
+| `R` | restart: runda 1, pełne życia, zwolniony przycisk; w quizie pytanie od nowa, na wynikach animacja od nowa |
 | `1`–`5` | wersja timera (na instruktażu) |
-| `1`–`5` | wersja animacji wciśnięcia (w quizie) |
+| `1`–`3` | wersja animacji wciśnięcia (w quizie) |
+| `1` / `2` | tempo animacji wyników (na ekranie wyników) |
 | `0`–`3` | skok wprost do stanu żyć (na tablecie, bez animacji) |
 | `Z` | zła odpowiedź — jedno życie mniej, z animacją |
 
@@ -252,6 +295,12 @@ w `assets/`:
   siatka odpowiedzi 2 × 1134×382 na (247, 747), pasek czasu 1424×45 na
   (723, 1690). Stany wciśnięte przycisków: node'y `2169-740` (czerwony),
   `2169-742` (żółty), `2169-744` (niebieski), `2169-773` (zielony).
+- **Instruktaż · wyniki** — ten sam plik, node `2305-61159` („Tabela
+  wyników / pokolorowane podium"): przesłona `rgba(2,2,2,0.51)` na tle
+  instruktażu, panel 2353×1544 na (263,5 , 128), tytuł 144 px, lista
+  1312 px od y 232, wiersze 2353×192 co 32 px. Eksport podaje tła podium
+  jako obrazki — w węzłach to gradienty z gradientowymi obrysami, więc
+  wszystko jest na CSS, bez dodatkowych plików.
 - **Quiz, dodatkowe warianty przycisków** — **inny plik**:
   `feDfMhqinxZSqSzWsB7qFF` („Estigroup — Newsletter”), node `15-115`
   (ciemniejsze wciśnięte, twarz `darker`) i node `15-148` (jaśniejsze

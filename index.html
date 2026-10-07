@@ -7,7 +7,7 @@
   <!-- Noto Sans Medium — font widoku quizu (Caudex leży lokalnie w assets/fonts) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@500&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@500;700&display=swap" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -46,6 +46,13 @@
 
     <div id="ctrl-quiz" class="topbar-group">
       <div id="quiz-switch" class="switch" role="group" aria-label="Wersja animacji wciśnięcia"></div>
+    </div>
+
+    <div id="ctrl-wyniki" class="topbar-group">
+      <div id="results-switch" class="switch" role="group" aria-label="Wersja animacji wyników"></div>
+      <div class="switch">
+        <button type="button" id="results-replay">▶ od nowa</button>
+      </div>
     </div>
 
     <span class="topbar-hint" id="topbar-hint"></span>

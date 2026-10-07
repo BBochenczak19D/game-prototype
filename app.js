@@ -175,6 +175,100 @@ const SEG_STYLES = {
   flat: { shadow: "none", blur: "none", opacity: "1" },
 };
 
+/* ============================================================
+   WYNIKI — tabela wyników na ekranie wspólnym (po grze)
+   Figma: plik UCzHnyMnTZ2AS0PnYsw6eR, node 2305-61159
+   („Tabela wyników / pokolorowane podium”). Tło to to samo
+   bg-instruktaz.png, przykryte przesłoną rgba(2,2,2,0.51).
+   Uwaga: eksport z Dev Mode podaje tła podium jako obrazki — w węzłach
+   to gradienty z gradientowymi obrysami (i znów bez minusa przy ujemnym
+   punkcie gradientu turkusowego), więc wartości są przeliczone z Figmy.
+   ============================================================ */
+
+/* Wygląd kafelka wiersza. Obrysy leżą w środku, więc idą drugą warstwą
+   tła pod przezroczystym borderem — tak samo jak w przyciskach. */
+const RESULT_TILES = {
+  gold: {
+    fill: "linear-gradient(179.649deg, #5c500a 3.56%, #a89311 283.42%)", // yellow/800 → yellow/600
+    stroke: "linear-gradient(0.923deg, #76670c 8.46%, #f6e472 129.69%)", // yellow/700 → yellow/400
+  },
+  silver: {
+    fill: "linear-gradient(0.374deg, #535353 -4.15%, #212121 114.38%)",
+    stroke: "linear-gradient(0.923deg, #595959 8.46%, #a7a7a7 129.69%)",
+  },
+  bronze: {
+    fill: "linear-gradient(0.374deg, #50331f -4.15%, #2b1b0f 114.38%)",
+    stroke: "linear-gradient(0.923deg, #50331f 8.46%, #a67d60 129.69%)",
+  },
+  plain: {
+    fill: "linear-gradient(177.706deg, #051819 -13.24%, #084642 82.03%)", // turquoise/900 → /700
+    stroke: "#084642",
+  },
+};
+
+/* Lista wyników: 6 wierszy 2353×192 co 32 px, pierwsze trzy to podium.
+   W Figmie wszyscy nazywają się „Adam” (placeholder) — tu mają różne
+   imiona, żeby odsłanianie podium miało sens. */
+const RESULTS = {
+  title: "Wyniki",
+  /* O tyle podium zjeżdża w dół, gdy zniknie reszta. Blok ma 640 px
+     (3×192 + 2×32) i ma stanąć w połowie wysokości między dołem tytułu
+     (272) a dołem panelu (1672), czyli środkiem na 972: 972 − 320 − 360. */
+  centerShift: 292,
+  centerScale: 1.06,
+  rows: [
+    { name: "Adam", score: "1243", tile: "gold" },
+    { name: "Ola", score: "864", tile: "silver" },
+    { name: "Kuba", score: "632", tile: "bronze" },
+    { name: "Zofia", score: "300", tile: "plain" },
+    { name: "Marek", score: "100", tile: "plain" },
+    { name: "Nina", score: "10", tile: "plain" },
+  ],
+};
+
+/* Wersje animacji wyników. Na razie jeden przebieg (V1) w dwóch czasach —
+   kolejne warianty ruchu dojdą jako następne wpisy.
+   Przebieg V1:
+   1. od dołu, od prawej wjeżdżają miejsca 6, 5, 4,
+   2. potem tak samo wjeżdża podium (3, 2, 1), ale bez imion,
+   3. po pauzie odsłania się imię na 3. miejscu (kafelek robi scale up/down),
+      po odstępie 2., na końcu 1.,
+   4. miejsca spoza podium wylatują w lewo za ekran, a podium po kolei
+      zjeżdża na środek listy i delikatnie się powiększa. */
+const RESULTS_VERSIONS = [
+  {
+    id: "v1", label: "V1 · standardowa", title: "Pełny przebieg, czasy standardowe (ok. 8,5 s)",
+    timing: {
+      enterDur: 520, enterStagger: 170, // wjazd kafelka i odstęp między kolejnymi
+      podiumWait: 260,                  // przerwa między grupą 4–6 a podium
+      revealWait: 800,                  // pauza przed odsłonięciem 3. miejsca
+      revealGap: 1300,                  // odstęp między odsłonięciami 3 → 2 → 1
+      nameDur: 420,                     // pojawienie się imienia
+      pulseDur: 760,                    // scale up/down kafelka przy odsłonięciu
+      exitWait: 700,                    // pauza po odsłonięciu zwycięzcy
+      exitDur: 620, exitStagger: 110,   // wylot miejsc 4–6 w lewo
+      centerWait: 320,                  // od startu ostatniego wylotu do zjazdu podium
+      centerDur: 760, centerStagger: 150,
+    },
+  },
+  {
+    id: "v1-wolna", label: "V1 · wolniejsza", title: "Ten sam przebieg, dłuższe pauzy (ok. 12,5 s)",
+    timing: {
+      enterDur: 680, enterStagger: 240,
+      podiumWait: 520,
+      revealWait: 1300,
+      revealGap: 2100,
+      nameDur: 560,
+      pulseDur: 980,
+      exitWait: 1100,
+      exitDur: 820, exitStagger: 160,
+      centerWait: 520,
+      centerDur: 1000, centerStagger: 220,
+    },
+  },
+];
+const DEFAULT_RESULTS_VERSION = "v1";
+
 /* --- Rundy: tekst zadania + motyw + czas trwania (4000–5000 ms) --- */
 const ROUNDS = [
   { text: "Nie naciskaj czerwonego przycisku", themeIndex: 0, durationMs: 4500 },
@@ -430,6 +524,7 @@ const VIEWS = [
   { id: "instruktaz", label: "Instruktaż",           build: buildInstruktaz },
   { id: "tablet",     label: "Tablet gracza · Would You Press", build: buildTablet },
   { id: "quiz",       label: "Tablet gracza · quiz", build: buildQuiz },
+  { id: "wyniki",     label: "Instruktaż · wyniki",  build: buildResults },
 ];
 const DEFAULT_VIEW = "instruktaz";
 
@@ -438,6 +533,7 @@ const HINTS = {
   instruktaz: "spacja — pauza · ←/→ — runda · R — restart",
   tablet: "kliknij przycisk · Z — tracisz życie · 0–3 — skok do stanu · R — restart",
   quiz: "kliknij odpowiedź · spacja — pauza · R — od nowa · 1–3 — wersja",
+  wyniki: "R — odtwórz animację od nowa · 1/2 — wersja",
 };
 
 const STORAGE_KEY = "quizsteries-version";
@@ -445,6 +541,7 @@ const VIEW_STORAGE_KEY = "quizsteries-view";
 const ANIM_STORAGE_KEY = "quizsteries-anim";
 const QUIZ_STORAGE_KEY = "quizsteries-quiz";
 const TIMER_COLOR_STORAGE_KEY = "quizsteries-timer-color";
+const RESULTS_STORAGE_KEY = "quizsteries-wyniki";
 
 /* ============================================================
    MOTYWY — 5 zestawów kolorów.
@@ -484,6 +581,9 @@ let currentVersionId = DEFAULT_VERSION;
 let currentAnimId = DEFAULT_ANIM;
 let currentQuizVersionId = DEFAULT_QUIZ_VERSION;
 let currentTimerColorId = DEFAULT_TIMER_COLOR;
+let resultEls = []; // wiersze tabeli wyników, od 1. miejsca
+let resultTimers = []; // budziki animacji wyników — kasowane przy restarcie
+let currentResultsVersionId = DEFAULT_RESULTS_VERSION;
 
 /* Tło widoku — każdy ekran ma własne rozciągnięcie z Figmy */
 function makeBg(cfg) {
@@ -826,6 +926,149 @@ function buildQuiz(root) {
 }
 
 /* ============================================================
+   WYNIKI — tabela z animacją odsłaniania podium
+   ============================================================ */
+
+/* --- Widok wyników: tło instruktażu + przesłona + tytuł + 6 wierszy --- */
+function buildResults(root) {
+  root.appendChild(makeBg(INSTRUKTAZ_BG));
+
+  const scrim = document.createElement("div");
+  scrim.className = "results";
+
+  const panel = document.createElement("div");
+  panel.className = "results-panel";
+
+  const title = document.createElement("div");
+  title.className = "results-title";
+  title.textContent = RESULTS.title;
+  panel.appendChild(title);
+
+  const list = document.createElement("div");
+  list.className = "results-rows";
+
+  resultEls = RESULTS.rows.map((cfg, i) => {
+    const tileStyle = RESULT_TILES[cfg.tile] || RESULT_TILES.plain;
+    const row = document.createElement("div");
+    row.className = "res-row" + (i < 3 ? " podium" : "");
+    row.style.setProperty("--tile-fill", tileStyle.fill);
+    row.style.setProperty("--tile-stroke", asImage(tileStyle.stroke));
+    row.innerHTML =
+      `<div class="res-tile"><span class="res-name"></span><span class="res-score"></span></div>`;
+    row.querySelector(".res-name").textContent = cfg.name;
+    row.querySelector(".res-score").textContent = cfg.score;
+    list.appendChild(row);
+    return row;
+  });
+
+  panel.appendChild(list);
+  scrim.appendChild(panel);
+  root.appendChild(scrim);
+
+  /* Wyniki nie mają rund — kolory bierze z motywu bazowego */
+  applyTheme(THEMES[0]);
+  playResults();
+}
+
+/* Budziki animacji: trzymamy je, żeby restart albo zmiana widoku
+   nie zostawiły w tle niedokończonej sekwencji. */
+function clearResultsTimers() {
+  resultTimers.forEach(clearTimeout);
+  resultTimers = [];
+}
+
+function resultsAt(ms, fn) {
+  resultTimers.push(setTimeout(fn, ms));
+}
+
+/* Odtwarza całą sekwencję od zera. Wszystkie czasy pochodzą z wersji,
+   więc porównanie dwóch tempa to tylko zmiana przełącznika. */
+function playResults() {
+  if (!resultEls.length) return;
+  clearResultsTimers();
+
+  const version = RESULTS_VERSIONS.find((v) => v.id === currentResultsVersionId) || RESULTS_VERSIONS[0];
+  const t = version.timing;
+  const podium = [2, 1, 0]; // kolejność: 3. miejsce, 2., 1.
+  const reszta = [5, 4, 3]; // od dołu: 6. miejsce, 5., 4.
+
+  /* Stan początkowy: wszystko za prawą krawędzią, podium bez imion */
+  resultEls.forEach((row) => {
+    const tile = row.querySelector(".res-tile");
+    row.classList.remove("revealed", "leaving");
+    row.style.transitionDuration = "0ms";
+    row.style.transform = "translateX(var(--res-off))";
+    tile.style.transitionDuration = "0ms";
+    tile.style.transform = "none";
+    tile.classList.remove("pulse");
+    row.style.setProperty("--res-name-dur", t.nameDur + "ms");
+    row.style.setProperty("--res-pulse-dur", t.pulseDur + "ms");
+  });
+  void resultEls[0].offsetWidth; // bez tego pierwszy wjazd animowałby się od starego stanu
+
+  const wjedz = (idx, delay) =>
+    resultsAt(delay, () => {
+      resultEls[idx].style.transitionDuration = t.enterDur + "ms";
+      resultEls[idx].style.transform = "translateX(0)";
+    });
+
+  /* 1. miejsca 6, 5, 4 wjeżdżają od prawej */
+  reszta.forEach((idx, k) => wjedz(idx, k * t.enterStagger));
+  let czas = 2 * t.enterStagger + t.enterDur + t.podiumWait;
+
+  /* 2. to samo robi podium — ale imiona zostają ukryte */
+  podium.forEach((idx, k) => wjedz(idx, czas + k * t.enterStagger));
+  czas += 2 * t.enterStagger + t.enterDur + t.revealWait;
+
+  /* 3. odsłanianie: 3. miejsce, po odstępie 2., na końcu zwycięzca */
+  podium.forEach((idx, k) =>
+    resultsAt(czas + k * t.revealGap, () => {
+      const row = resultEls[idx];
+      const tile = row.querySelector(".res-tile");
+      row.classList.add("revealed");
+      tile.classList.remove("pulse");
+      void tile.offsetWidth; // restart animacji, gdyby kafelek już pulsował
+      tile.classList.add("pulse");
+    })
+  );
+  czas += 2 * t.revealGap + t.pulseDur + t.exitWait;
+
+  /* 4a. miejsca spoza podium wylatują w lewo — dalej tą samą drogą */
+  reszta.forEach((idx, k) =>
+    resultsAt(czas + k * t.exitStagger, () => {
+      const row = resultEls[idx];
+      row.classList.add("leaving");
+      row.style.transitionDuration = t.exitDur + "ms";
+      row.style.transform = "translateX(calc(-1 * var(--res-off)))";
+    })
+  );
+  czas += 2 * t.exitStagger + t.centerWait;
+
+  /* 4b. podium zjeżdża po kolei na środek listy i delikatnie rośnie */
+  podium.forEach((idx, k) =>
+    resultsAt(czas + k * t.centerStagger, () => {
+      const tile = resultEls[idx].querySelector(".res-tile");
+      resultEls[idx].classList.add("centered");
+      tile.style.transitionDuration = t.centerDur + "ms";
+      tile.style.transform = `translateY(${RESULTS.centerShift}px) scale(${RESULTS.centerScale})`;
+    })
+  );
+}
+
+/* Wersja animacji wyników — zmiana od razu odtwarza przebieg od nowa */
+function mountResultsVersion(id) {
+  const version = RESULTS_VERSIONS.find((v) => v.id === id) || RESULTS_VERSIONS[0];
+  currentResultsVersionId = version.id;
+
+  document.querySelectorAll("#results-switch button").forEach((btn) => {
+    btn.setAttribute("aria-pressed", String(btn.dataset.results === version.id));
+  });
+
+  remember(RESULTS_STORAGE_KEY, version.id);
+  playResults();
+}
+
+/* ============================================================
    SCENA I PRZEŁĄCZANIE WIDOKÓW
    ============================================================ */
 
@@ -847,6 +1090,8 @@ function mountView(id) {
   lifeEls = [];
   answerEls = [];
   quizEls = null;
+  clearResultsTimers();
+  resultEls = [];
   textEl = null;
 
   viewEl.innerHTML = "";
@@ -984,6 +1229,18 @@ function buildTopbar() {
     btn.addEventListener("click", () => mountVersion(v.id));
     versions.appendChild(btn);
   });
+
+  const results = document.getElementById("results-switch");
+  RESULTS_VERSIONS.forEach((v) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = v.label;
+    btn.title = v.title;
+    btn.dataset.results = v.id;
+    btn.addEventListener("click", () => mountResultsVersion(v.id));
+    results.appendChild(btn);
+  });
+  document.getElementById("results-replay").addEventListener("click", playResults);
 
   const colors = document.getElementById("timer-color-switch");
   TIMER_COLORS.forEach((c) => {
@@ -1284,6 +1541,7 @@ window.addEventListener("keydown", (e) => {
       clearPressedAnswer();
       startRound(0);
       if (currentViewId === "quiz") startQuestion();
+      if (currentViewId === "wyniki") playResults();
       break;
     /* Cyfry: na instruktażu wersja timera (1–5), na tablecie liczba żyć (0–3),
        w quizie wersja wciśnięcia (1–3). Cyfry spoza zakresu są ignorowane. */
@@ -1298,6 +1556,8 @@ window.addEventListener("keydown", (e) => {
         if (n <= LIVES.max) setLives(n);
       } else if (currentViewId === "quiz") {
         if (n >= 1 && QUIZ_VERSIONS[n - 1]) mountQuizVersion(QUIZ_VERSIONS[n - 1].id);
+      } else if (currentViewId === "wyniki") {
+        if (n >= 1 && RESULTS_VERSIONS[n - 1]) mountResultsVersion(RESULTS_VERSIONS[n - 1].id);
       } else if (n >= 1 && VERSIONS[n - 1]) {
         mountVersion(VERSIONS[n - 1].id);
       }
@@ -1326,6 +1586,7 @@ buildScene();
 buildTopbar();
 currentVersionId = initialChoice("v", STORAGE_KEY, VERSIONS.map((v) => v.id), DEFAULT_VERSION);
 currentQuizVersionId = initialChoice("quiz", QUIZ_STORAGE_KEY, QUIZ_VERSIONS.map((v) => v.id), DEFAULT_QUIZ_VERSION);
+currentResultsVersionId = initialChoice("wyniki", RESULTS_STORAGE_KEY, RESULTS_VERSIONS.map((v) => v.id), DEFAULT_RESULTS_VERSION);
 setLifeAnim(initialChoice("anim", ANIM_STORAGE_KEY, LIFE_ANIMS.map((a) => a.id), DEFAULT_ANIM));
 setTimerColor(initialChoice("timer", TIMER_COLOR_STORAGE_KEY, TIMER_COLORS.map((c) => c.id), DEFAULT_TIMER_COLOR));
 fitScene();
