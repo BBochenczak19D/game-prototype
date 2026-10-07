@@ -591,13 +591,15 @@ body {
   .life.losing,
   .life.losing .life-full,
   .life.losing::before,
-  .res-tile.pulse {
+  .res-tile.pulse,
+  .pod-col.shown {
     animation-duration: 1ms !important;
   }
 
   .qa,
   .res-row,
-  .res-tile {
+  .res-tile,
+  .podium-stage {
     transition-duration: 1ms;
   }
 }
@@ -702,6 +704,7 @@ body {
   -webkit-font-smoothing: antialiased; /* jak w quizie — bez tego litery są grubsze niż w Figmie */
   -moz-osx-font-smoothing: grayscale;
   user-select: none;
+  transition: opacity 500ms ease-out; /* w wersji z podium wchodzi razem z tabelą */
 }
 
 .results-rows {
@@ -798,6 +801,173 @@ body {
   0%   { transform: scale(1); }
   45%  { transform: scale(1.04); }
   100% { transform: scale(1); }
+}
+
+/* W wersji z podium tytuł wchodzi dopiero razem z tabelą */
+.results-title.hidden-title {
+  opacity: 0;
+}
+
+/* ============================================================
+   WYNIKI — EKRAN PODIUM (Figma node 2307-61203)
+   Geometria 1:1: Frame 177 = 2353×968,661 wyśrodkowany w panelu
+   (panel 1544 wysokości → y 287,669), kolumny rozsunięte do krawędzi
+   i dosunięte do dołu, więc plakietka zwycięzcy jest wyższa.
+   Plakietki to wektory z cieniem — SVG są większe od swoich pól
+   o margines cienia (42 px górą i prawą, 62 px dołem i lewą).
+   ============================================================ */
+.podium-stage {
+  position: absolute;
+  left: 0;
+  top: 287.669px;
+  width: 2353px;
+  height: 968.661px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  transition: opacity var(--pod-fade, 700ms) ease-in, transform var(--pod-fade, 700ms) ease-in;
+}
+
+/* Po przejściu do tabeli ekran podium wychodzi z układu całkiem */
+.podium-stage.off {
+  display: none;
+}
+
+.podium-stage.hiding {
+  opacity: 0;
+  transform: translateY(-64px) scale(0.94);
+}
+
+.pod-col {
+  width: 524px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 64px;
+  opacity: 0;
+  transform-origin: 50% 100%; /* rosną od podstawy, jak puchary */
+  will-change: transform, opacity;
+}
+
+.pod-col.first {
+  width: 638.584px;
+}
+
+/* Pojawienie się: wskok z dołu ze scale up i spokojnym domknięciem */
+.pod-col.shown {
+  opacity: 1;
+  animation: pod-in var(--pod-dur, 900ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes pod-in {
+  0%   { opacity: 0; transform: translateY(72px) scale(0.72); }
+  55%  { opacity: 1; transform: translateY(0) scale(1.08); }
+  78%  { transform: translateY(0) scale(0.97); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Plakietka: pole z Figmy, a w nim dwa wektory i numer na wierzchu */
+.pod-badge {
+  position: relative;
+  width: 357px;
+  height: 370px;
+}
+
+.pod-col.first .pod-badge {
+  width: 638.584px;
+  height: 661.661px;
+}
+
+.pod-badge-outer,
+.pod-badge-inner > img {
+  position: absolute;
+  left: -62px;
+  top: -42px;
+  width: 461px;
+  height: 474px;
+}
+
+.pod-badge-inner {
+  position: absolute;
+  left: 15px;
+  top: 12px;
+  width: 330px;
+  height: 347px;
+}
+
+.pod-badge-inner > img {
+  width: 434px;
+  height: 451px;
+}
+
+.pod-col.first .pod-badge-outer {
+  width: 742.584px;
+  height: 765.661px;
+}
+
+.pod-col.first .pod-badge-inner {
+  left: 26.126px;
+  top: 21.009px;
+  width: 590.683px;
+  height: 621.401px;
+}
+
+.pod-col.first .pod-badge-inner > img {
+  left: -69px;
+  top: -58px;
+  width: 718.683px;
+  height: 749.401px;
+}
+
+/* Numer miejsca leży dokładnie na środku plakietki */
+.pod-num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Noto Sans", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 200px;
+  line-height: 1.5;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+}
+
+.pod-col.first .pod-num {
+  font-size: 400px;
+}
+
+.pod-text {
+  width: 524px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.pod-name,
+.pod-points {
+  font-family: "Noto Sans", system-ui, sans-serif;
+  line-height: 1.5;
+  color: var(--text);
+  text-align: center;
+  white-space: nowrap;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+}
+
+.pod-name {
+  font-weight: 700;
+  font-size: 90px;
+}
+
+.pod-points {
+  font-weight: 500;
+  font-size: 64px;
 }
 
 /* --- Tekst zadania: Caudex Bold 160px, beige/500, środek sceny --- */

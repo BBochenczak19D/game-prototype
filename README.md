@@ -15,7 +15,7 @@ pozycje.
 | **Instruktaż** | ekran wspólny: treść zadania + timer rundy |
 | **Tablet gracza · Would You Press** | ekran w rękach gracza: punkty, 4 okrągłe przyciski do wciskania, panel żyć |
 | **Tablet gracza · quiz** | pytanie, 4 odpowiedzi 2×2 z animacją wciśnięcia, pasek czasu |
-| **Instruktaż · wyniki** | tabela wyników z animacją odsłaniania podium (ekran wspólny po grze) |
+| **Instruktaż · wyniki** | ekran wspólny po grze: tabela wyników i ekran podium, w trzech wariantach animacji |
 
 Można wysłać link prosto do jednego ekranu, dopisując `?view=` do adresu:
 `?view=instruktaz`, `?view=tablet`, `?view=quiz`. Wybór zapamiętuje się
@@ -101,7 +101,7 @@ Imiona i wyniki siedzą w `RESULTS` w `app.js`. W Figmie wszyscy nazywają
 się „Adam" (placeholder), tutaj mają różne imiona — inaczej odsłanianie
 podium nie miałoby sensu.
 
-### Przebieg animacji (V1)
+### Przebieg V1 — odsłanianie podium w tabeli
 
 1. Od dołu, od prawej wjeżdżają miejsca **6, 5, 4** — jedno po drugim.
 2. Tak samo wjeżdża podium (**3, 2, 1**), ale **bez imion** — do tego
@@ -116,21 +116,34 @@ podium nie miałoby sensu.
 
 Animacja jest autorska; w Figmie jest tylko stan końcowy kroku 2.
 
-### Dwa tempa do porównania
+### Przebieg V2 — najpierw podium, potem tabela
+
+1. Na osobnym ekranie (design: node `2307-61203`) wskakują plakietki
+   **3 → 2 → 1** — każda z dołu, ze scale up i spokojnym domknięciem.
+   Pod plakietką od razu jest imię i liczba punktów.
+2. Gotowe podium stoi ok. **3 s**, a potem cały ekran gaśnie w górę.
+3. Tabela wjeżdża **od samej góry**, wiersz po wierszu od 1. do 6. miejsca.
+   W tej wersji **imiona i wyniki są widoczne od razu** — niespodziankę
+   zrobiło już podium — a tytuł „Wyniki" wraca razem z tabelą (na ekranie
+   podium go nie ma, tak jak w Figmie).
+
+### Trzy tempa do porównania
 
 | Wersja | Długość | Czym się różni |
 | --- | --- | --- |
-| **V1 · standardowa** | ok. 8,5 s | pauzy dobrane tak, żeby dało się śledzić, ale bez dłużyzn |
-| **V1 · wolniejsza** | ok. 12,7 s | dłuższe pauzy, zwłaszcza między odsłonięciami podium |
+| **V1 · wolna** | ok. 13,5 s | pełne odsłanianie podium w tabeli |
+| **V1 · bardzo wolna** | ok. 17 s | ten sam przebieg, dłuższe wjazdy i pauzy |
+| **V2 · podium najpierw** | ok. 10 s | ekran podium, przejście, tabela z góry |
 
 Wszystkie czasy (wjazd, odstępy, pauzy, wylot, zjazd na środek) siedzą
 w `RESULTS_VERSIONS` w `app.js` — każdy jako osobna liczba, więc da się
-dostroić pojedynczy etap bez ruszania reszty. Kolejne warianty ruchu
-dojdą jako następne wpisy w tej samej tablicy.
+dostroić pojedynczy etap bez ruszania reszty. Pole `kind` wybiera sam
+przebieg (`table` albo `podium`), więc ten sam ruch da się dołożyć
+w kolejnym tempie jednym wpisem.
 
-Wersję przełącza się w pasku, klawiszami `1` / `2` albo w adresie:
-`?view=wyniki&wyniki=v1`, `…&wyniki=v1-wolna`. Przycisk **▶ od nowa**
-(albo klawisz `R`) odtwarza całość jeszcze raz.
+Wersję przełącza się w pasku, klawiszami `1` / `2` / `3` albo w adresie:
+`?view=wyniki&wyniki=v1-wolna`, `…&wyniki=v1-bardzo-wolna`, `…&wyniki=v2`.
+Przycisk **▶ od nowa** (albo klawisz `R`) odtwarza całość jeszcze raz.
 
 ## Ekran: Tablet gracza · Would You Press
 
@@ -250,7 +263,7 @@ ale siedzą w historii gita (commit `d56814d`), więc da się je przywrócić.
 | `R` | restart: runda 1, pełne życia, zwolniony przycisk; w quizie pytanie od nowa, na wynikach animacja od nowa |
 | `1`–`5` | wersja timera (na instruktażu) |
 | `1`–`3` | wersja animacji wciśnięcia (w quizie) |
-| `1` / `2` | tempo animacji wyników (na ekranie wyników) |
+| `1`–`3` | wersja animacji wyników (na ekranie wyników) |
 | `0`–`3` | skok wprost do stanu żyć (na tablecie, bez animacji) |
 | `Z` | zła odpowiedź — jedno życie mniej, z animacją |
 
@@ -301,6 +314,15 @@ w `assets/`:
   1312 px od y 232, wiersze 2353×192 co 32 px. Eksport podaje tła podium
   jako obrazki — w węzłach to gradienty z gradientowymi obrysami, więc
   wszystko jest na CSS, bez dodatkowych plików.
+- **Instruktaż · wyniki, ekran podium (V2)** — ten sam plik, node
+  `2307-61203`: blok 2353×968,661 wyśrodkowany w panelu (y 287,669),
+  kolumny rozsunięte do krawędzi i dosunięte do dołu — stąd zwycięzca
+  jest wyższy (638,584×968,661) od miejsc 2 i 3 (524×677). Numery
+  200 px / 400 px Bold, imię 90 px Bold, punkty 64 px Medium. Plakietki
+  to wektory z cieniem, więc leżą jako SVG w `assets/podium-<1|2|3>-
+  <outer|inner>.svg`; pliki są większe od swoich pól o margines cienia
+  (42 px górą i prawą, 62 px dołem i lewą), dlatego w CSS mają ujemne
+  `left`/`top`. Tytułu „Wyniki" na tym ekranie nie ma.
 - **Quiz, dodatkowe warianty przycisków** — **inny plik**:
   `feDfMhqinxZSqSzWsB7qFF` („Estigroup — Newsletter”), node `15-115`
   (ciemniejsze wciśnięte, twarz `darker`) i node `15-148` (jaśniejsze

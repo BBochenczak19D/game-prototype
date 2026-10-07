@@ -226,48 +226,70 @@ const RESULTS = {
   ],
 };
 
-/* Wersje animacji wyników. Na razie jeden przebieg (V1) w dwóch czasach —
-   kolejne warianty ruchu dojdą jako następne wpisy.
-   Przebieg V1:
+/* Wersje animacji wyników. Pole `kind` wybiera przebieg, `timing` — tempo,
+   więc ten sam przebieg da się pokazać w kilku czasach.
+
+   kind: "table" (V1) — odsłanianie podium w tabeli:
    1. od dołu, od prawej wjeżdżają miejsca 6, 5, 4,
    2. potem tak samo wjeżdża podium (3, 2, 1), ale bez imion,
    3. po pauzie odsłania się imię na 3. miejscu (kafelek robi scale up/down),
       po odstępie 2., na końcu 1.,
    4. miejsca spoza podium wylatują w lewo za ekran, a podium po kolei
-      zjeżdża na środek listy i delikatnie się powiększa. */
+      zjeżdża na środek listy i delikatnie się powiększa.
+
+   kind: "podium" (V2) — najpierw celebracja, potem tabela:
+   1. na ekranie podium wskakują plakietki 3 → 2 → 1 (scale up/down),
+   2. gotowe podium stoi chwilę i gaśnie w górę,
+   3. tabela zjeżdża od samej góry, wiersz po wierszu, z imionami
+      i punktami widocznymi od razu. */
 const RESULTS_VERSIONS = [
   {
-    id: "v1", label: "V1 · standardowa", title: "Pełny przebieg, czasy standardowe (ok. 8,5 s)",
+    id: "v1-wolna", label: "V1 · wolna", kind: "table",
+    title: "Tabela: wjazd z prawej, odsłanianie podium, zjazd na środek (ok. 13,5 s)",
     timing: {
-      enterDur: 520, enterStagger: 170, // wjazd kafelka i odstęp między kolejnymi
-      podiumWait: 260,                  // przerwa między grupą 4–6 a podium
-      revealWait: 800,                  // pauza przed odsłonięciem 3. miejsca
-      revealGap: 1300,                  // odstęp między odsłonięciami 3 → 2 → 1
-      nameDur: 420,                     // pojawienie się imienia
-      pulseDur: 760,                    // scale up/down kafelka przy odsłonięciu
-      exitWait: 700,                    // pauza po odsłonięciu zwycięzcy
-      exitDur: 620, exitStagger: 110,   // wylot miejsc 4–6 w lewo
-      centerWait: 320,                  // od startu ostatniego wylotu do zjazdu podium
-      centerDur: 760, centerStagger: 150,
-    },
-  },
-  {
-    id: "v1-wolna", label: "V1 · wolniejsza", title: "Ten sam przebieg, dłuższe pauzy (ok. 12,5 s)",
-    timing: {
-      enterDur: 680, enterStagger: 240,
-      podiumWait: 520,
-      revealWait: 1300,
-      revealGap: 2100,
-      nameDur: 560,
-      pulseDur: 980,
-      exitWait: 1100,
-      exitDur: 820, exitStagger: 160,
-      centerWait: 520,
+      enterDur: 900, enterStagger: 280,  // wjazd kafelka i odstęp między kolejnymi
+      podiumWait: 520,                   // przerwa między grupą 4–6 a podium
+      revealWait: 1300,                  // pauza przed odsłonięciem 3. miejsca
+      revealGap: 2100,                   // odstęp między odsłonięciami 3 → 2 → 1
+      nameDur: 560,                      // pojawienie się imienia
+      pulseDur: 980,                     // scale up/down kafelka przy odsłonięciu
+      exitWait: 1100,                    // pauza po odsłonięciu zwycięzcy
+      exitDur: 1000, exitStagger: 200,   // wylot miejsc 4–6 w lewo
+      centerWait: 520,                   // od startu ostatniego wylotu do zjazdu podium
       centerDur: 1000, centerStagger: 220,
     },
   },
+  {
+    id: "v1-bardzo-wolna", label: "V1 · bardzo wolna", kind: "table",
+    title: "Ten sam przebieg, jeszcze dłuższe wjazdy i pauzy (ok. 17 s)",
+    timing: {
+      enterDur: 1150, enterStagger: 360,
+      podiumWait: 700,
+      revealWait: 1700,
+      revealGap: 2600,
+      nameDur: 700,
+      pulseDur: 1150,
+      exitWait: 1400,
+      exitDur: 1250, exitStagger: 260,
+      centerWait: 650,
+      centerDur: 1250, centerStagger: 280,
+    },
+  },
+  {
+    id: "v2", label: "V2 · podium najpierw", kind: "podium",
+    title: "Najpierw ekran podium (3 → 2 → 1), potem tabela wjeżdżająca z góry (ok. 10 s)",
+    timing: {
+      padWait: 600,                      // pauza przed pierwszą plakietką
+      padDur: 900,                       // pojawienie się jednej plakietki
+      padGap: 1100,                      // odstęp 3 → 2 → 1
+      padHold: 3200,                     // ile stoi gotowe podium
+      fadeDur: 800,                      // znikanie ekranu podium
+      tableWait: 250,                    // chwila przed wjazdem tabeli
+      enterDur: 950, enterStagger: 180,  // wjazd wierszy z góry
+    },
+  },
 ];
-const DEFAULT_RESULTS_VERSION = "v1";
+const DEFAULT_RESULTS_VERSION = "v1-wolna";
 
 /* --- Rundy: tekst zadania + motyw + czas trwania (4000–5000 ms) --- */
 const ROUNDS = [
@@ -582,6 +604,8 @@ let currentAnimId = DEFAULT_ANIM;
 let currentQuizVersionId = DEFAULT_QUIZ_VERSION;
 let currentTimerColorId = DEFAULT_TIMER_COLOR;
 let resultEls = []; // wiersze tabeli wyników, od 1. miejsca
+let podiumEl = null; // ekran celebracji zwycięzców (wersja V2)
+let podiumCols = []; // kolumny podium, indeks 0 = zwycięzca
 let resultTimers = []; // budziki animacji wyników — kasowane przy restarcie
 let currentResultsVersionId = DEFAULT_RESULTS_VERSION;
 
@@ -929,7 +953,8 @@ function buildQuiz(root) {
    WYNIKI — tabela z animacją odsłaniania podium
    ============================================================ */
 
-/* --- Widok wyników: tło instruktażu + przesłona + tytuł + 6 wierszy --- */
+/* --- Widok wyników: tło instruktażu + przesłona + ekran podium + tabela.
+   Obie części powstają zawsze, wersja decyduje, którą widać. --- */
 function buildResults(root) {
   root.appendChild(makeBg(INSTRUKTAZ_BG));
 
@@ -962,6 +987,31 @@ function buildResults(root) {
   });
 
   panel.appendChild(list);
+
+  /* Ekran podium (node 2307-61203): w Figmie kolejność w rzędzie to 2, 1, 3,
+     a kolumny są dosunięte do dołu — stąd plakietka zwycięzcy jest wyższa. */
+  podiumEl = document.createElement("div");
+  podiumEl.className = "podium-stage off";
+  podiumCols = [];
+  [1, 0, 2].forEach((idx) => {
+    const cfg = RESULTS.rows[idx];
+    const miejsce = idx + 1;
+    const col = document.createElement("div");
+    col.className = "pod-col" + (idx === 0 ? " first" : "");
+    col.innerHTML =
+      `<div class="pod-badge">` +
+      `<img class="pod-badge-outer" src="assets/podium-${miejsce}-outer.svg" alt="">` +
+      `<span class="pod-badge-inner"><img src="assets/podium-${miejsce}-inner.svg" alt=""></span>` +
+      `<span class="pod-num">${miejsce}</span>` +
+      `</div>` +
+      `<div class="pod-text"><div class="pod-name"></div><div class="pod-points"></div></div>`;
+    col.querySelector(".pod-name").textContent = cfg.name;
+    col.querySelector(".pod-points").textContent = cfg.score + " pkt";
+    podiumEl.appendChild(col);
+    podiumCols[idx] = col; // indeks 0 = zwycięzca
+  });
+  panel.appendChild(podiumEl);
+
   scrim.appendChild(panel);
   root.appendChild(scrim);
 
@@ -981,30 +1031,60 @@ function resultsAt(ms, fn) {
   resultTimers.push(setTimeout(fn, ms));
 }
 
-/* Odtwarza całą sekwencję od zera. Wszystkie czasy pochodzą z wersji,
-   więc porównanie dwóch tempa to tylko zmiana przełącznika. */
+/* Odtwarza sekwencję wybranej wersji od zera. Wszystkie czasy pochodzą
+   z konfiguracji wersji, więc porównanie temp to tylko zmiana przełącznika. */
 function playResults() {
-  if (!resultEls.length) return;
+  if (!resultEls.length || !podiumEl) return;
   clearResultsTimers();
 
   const version = RESULTS_VERSIONS.find((v) => v.id === currentResultsVersionId) || RESULTS_VERSIONS[0];
-  const t = version.timing;
-  const podium = [2, 1, 0]; // kolejność: 3. miejsce, 2., 1.
-  const reszta = [5, 4, 3]; // od dołu: 6. miejsce, 5., 4.
+  resetResults(version);
+  if (version.kind === "podium") playResultsPodium(version);
+  else playResultsTable(version);
+}
 
-  /* Stan początkowy: wszystko za prawą krawędzią, podium bez imion */
+/* Stan wyjściowy zależy od wersji: tabela czeka za prawą krawędzią (V1)
+   albo nad ekranem (V2). W V2 imiona i wyniki są widoczne od razu,
+   a tytuł „Wyniki” wchodzi dopiero razem z tabelą. */
+function resetResults(version) {
+  const t = version.timing;
+  const zGory = version.kind === "podium";
+
+  podiumEl.classList.toggle("off", !zGory);
+  podiumEl.classList.remove("hiding");
+  podiumEl.style.setProperty("--pod-fade", (t.fadeDur || 700) + "ms");
+  podiumCols.forEach((col) => {
+    col.classList.remove("shown");
+    col.style.setProperty("--pod-dur", (t.padDur || 900) + "ms");
+  });
+
+  const tytul = document.querySelector(".results-title");
+  if (tytul) tytul.classList.toggle("hidden-title", zGory);
+
   resultEls.forEach((row) => {
     const tile = row.querySelector(".res-tile");
-    row.classList.remove("revealed", "leaving");
+    row.classList.remove("leaving", "centered");
+    row.classList.toggle("revealed", zGory);
     row.style.transitionDuration = "0ms";
-    row.style.transform = "translateX(var(--res-off))";
+    row.style.transform = zGory ? "translateY(-1800px)" : "translateX(var(--res-off))";
     tile.style.transitionDuration = "0ms";
     tile.style.transform = "none";
     tile.classList.remove("pulse");
-    row.style.setProperty("--res-name-dur", t.nameDur + "ms");
-    row.style.setProperty("--res-pulse-dur", t.pulseDur + "ms");
+    row.style.setProperty("--res-name-dur", "0ms"); // imiona mają zgasnąć od razu, nie przenikać
+    row.style.setProperty("--res-pulse-dur", (t.pulseDur || 760) + "ms");
   });
   void resultEls[0].offsetWidth; // bez tego pierwszy wjazd animowałby się od starego stanu
+
+  /* Dopiero po przeliczeniu układu wracamy do czasu przenikania imienia —
+     inaczej restart pokazywałby, jak imiona z podium gasną. */
+  if (!zGory) resultEls.forEach((row) => row.style.setProperty("--res-name-dur", t.nameDur + "ms"));
+}
+
+/* V1: tabela od prawej, odsłanianie podium, zjazd na środek */
+function playResultsTable(version) {
+  const t = version.timing;
+  const podium = [2, 1, 0]; // kolejność: 3. miejsce, 2., 1.
+  const reszta = [5, 4, 3]; // od dołu: 6. miejsce, 5., 4.
 
   const wjedz = (idx, delay) =>
     resultsAt(delay, () => {
@@ -1055,6 +1135,38 @@ function playResults() {
   );
 }
 
+/* V2 (node 2307-61203): najpierw celebracja na podium — plakietki 3, 2, 1
+   wskakują ze scale up/down — potem płynne przejście i tabela zjeżdżająca
+   z góry z już widocznymi imionami i punktami. */
+function playResultsPodium(version) {
+  const t = version.timing;
+  const kolejnosc = [2, 1, 0]; // 3. miejsce, 2., zwycięzca
+
+  /* 1. plakietki pojawiają się po kolei */
+  kolejnosc.forEach((idx, k) =>
+    resultsAt(t.padWait + k * t.padGap, () => podiumCols[idx].classList.add("shown"))
+  );
+  let czas = t.padWait + 2 * t.padGap + t.padDur + t.padHold;
+
+  /* 2. cały ekran podium gaśnie — delikatnie w dół i do zera */
+  resultsAt(czas, () => podiumEl.classList.add("hiding"));
+  czas += t.fadeDur;
+  resultsAt(czas, () => podiumEl.classList.add("off"));
+
+  /* 3. tytuł wraca, a tabela zjeżdża od samej góry, wiersz po wierszu */
+  czas += t.tableWait;
+  resultsAt(czas, () => {
+    const tytul = document.querySelector(".results-title");
+    if (tytul) tytul.classList.remove("hidden-title");
+  });
+  resultEls.forEach((row, k) =>
+    resultsAt(czas + k * t.enterStagger, () => {
+      row.style.transitionDuration = t.enterDur + "ms";
+      row.style.transform = "translateY(0)";
+    })
+  );
+}
+
 /* Wersja animacji wyników — zmiana od razu odtwarza przebieg od nowa */
 function mountResultsVersion(id) {
   const version = RESULTS_VERSIONS.find((v) => v.id === id) || RESULTS_VERSIONS[0];
@@ -1092,6 +1204,8 @@ function mountView(id) {
   quizEls = null;
   clearResultsTimers();
   resultEls = [];
+  podiumEl = null;
+  podiumCols = [];
   textEl = null;
 
   viewEl.innerHTML = "";
