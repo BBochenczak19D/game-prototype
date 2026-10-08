@@ -13,7 +13,7 @@ pozycje.
 | Widok | Co pokazuje |
 | --- | --- |
 | **Instruktaż** | ekran wspólny: treść zadania + timer rundy |
-| **Tablet gracza · Would You Press** | ekran w rękach gracza: punkty, 4 okrągłe przyciski do wciskania, panel żyć |
+| **Tablet gracza · Would You Press** | ekran w rękach gracza: punkty, 4 okrągłe przyciski do wciskania, panel żyć, feedback po odpowiedzi |
 | **Tablet gracza · quiz** | pytanie, 4 odpowiedzi 2×2 z animacją wciśnięcia, pasek czasu |
 | **Ekran wyniku · Would You Press** | wynik gracza, imię i życia — w grze albo po odpadnięciu |
 | **Instruktaż · wyniki** | ekran wspólny po grze: tabela wyników i ekran podium, w trzech wariantach animacji |
@@ -204,6 +204,30 @@ w adresie: `?anim=` z `drain`, `burnout`, `wobble`, `flip`. Domyślny:
 Przyciski `3 / 2 / 1 / 0` skaczą wprost do stanu, bez animacji — animację
 odpala utrata pojedynczego życia (`−1 życie` albo klawisz `Z`).
 
+### Feedback po odpowiedzi
+
+Po wciśnięciu przycisku gracz może dostać informację, czy odpowiedział
+dobrze. W pasku są dwa przełączniki: **feedback** (wersja) i **dobra / zła**
+(czym ma być następne wciśnięcie).
+
+| Wersja | Co się dzieje po wciśnięciu |
+| --- | --- |
+| **bez** | dotychczasowe zachowanie — przycisk tylko ciemnieje, nic więcej się nie dzieje |
+| **V1 · z tekstem** | wciśnięty przycisk robi się zielony albo czerwony, a nad przyciskami wchodzi „Dobrze!" / „Źle!" |
+| **V2 · bez tekstu** | to samo, ale bez komunikatu — zostaje sam kolor przycisku |
+
+Komunikat wchodzi fade in z lekkim zjazdem z góry (36 px, 420 ms), a przy
+złej odpowiedzi **równocześnie** rusza animacja utraty życia w wybranym
+wariancie. Przycisk zostaje w kolorze do następnej odpowiedzi albo do `R`.
+
+Kolor feedbacku to osobny wariant komponentu z Figmy, więc różni się nie
+tylko rdzeń: skorupa ma inne wypełnienie, inny obrys, ciaśniejszy cień
+i padding 15 zamiast 16 (rdzeń jest o 2 px większy). Zmiana koloru,
+rozmiaru i cienia leci jednym przejściem, tym samym, co wciśnięcie.
+
+Wersję można też podać w adresie: `?feedback=off|v1|v2` oraz
+`?odpowiedz=ok|bad`.
+
 ## Ekran: Ekran wyniku · Would You Press
 
 Osobny ekran gry Would You Press: w ramce na całą scenę wynik gracza, jego
@@ -216,7 +240,10 @@ jest wspólny dla obu ekranów Would You Press.
 | Stan | Figma | Czym się różni |
 | --- | --- | --- |
 | **gracz w grze** | node `250-35` | jaśniejsze tło panelu (`#06141a`), obrys z turkusowymi końcami, imię z poświatą przy 98 % krycia, kryształy pełne |
-| **gracz odpadł** | node `250-17` | tło panelu zrównane z ramką (`#030e10`), z obrysu znikają jasne końce, imię bez poświaty przy 80 %, kryształy puste i przygaszone do 50 % |
+| **gracz odpadł** | node `250-17` | tło panelu zrównane z ramką (`#030e10`), z obrysu znikają jasne końce, imię **i wynik** bez poświaty przy 80 %, kryształy puste i przygaszone do 50 % |
+
+Wynik przy odpadnięciu gaśnie razem z imieniem (80 %, bez poświaty) — to
+świadome odejście od Figmy, gdzie w node `250-17` został jasny.
 
 To jeden widok, nie dwa — stan przełącza liczba żyć (zero = odpadł), tak jak
 na tablecie. Przejście między nimi jest jednym płynnym przenikaniem (420 ms):
@@ -357,6 +384,16 @@ w `assets/`:
   Dev Mode podaje oba obrysy jako jeden płaski kolor — w węzłach to
   gradienty liniowe, więc policzone są z `gradientTransform`.
 
+- **Tablet gracza, feedback po odpowiedzi** — plik
+  `nZLMCPYklALDluh6mTvcPO`, node `254-110` (dobra odpowiedź) i `254-131`
+  (zła). Wciśnięty przycisk dostaje wariant komponentu QUIZ/button z innym
+  rdzeniem, skorupą i cieniami; komunikat to blok 1878×108 wyśrodkowany
+  w scenie (środek na y 358), Noto Sans Regular 72 px, `#0bf80b` dla
+  „Dobrze!" i `#f64949` dla „Źle!".
+  **Uwaga — te dwa ekrany mają nowszy panel żyć i inny font punktów**
+  (ramka 647×261 bez podpisu „Twoje życia:", punkty w Noto Sans zamiast
+  Caudex). Prototyp został przy starszej wersji z node `1935-11833`, bo
+  zmiana panelu nie była przedmiotem zadania.
 - **Tablet gracza · quiz** — ten sam plik, node `2168-692` („Quiz/Pytanie
   i odpowiedzi”): tło `bg-quiz.png`, punkty i pytanie w Noto Sans Medium,
   siatka odpowiedzi 2 × 1134×382 na (247, 747), pasek czasu 1424×45 na

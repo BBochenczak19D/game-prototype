@@ -50,7 +50,8 @@
   /* cień turkusowej skorupy wokół rdzenia — też wspólny */
   --answer-shell-shadow: -5px 6px 42px 2px rgba(5, 19, 22, 0.6), -10px 10px 64px 12px #051114;
 
-  /* wysokość paska podglądu nad sceną (poza designem) */
+  /* Wysokość paska podglądu nad sceną (poza designem). Wartość startowa —
+     app.js nadpisuje ją zmierzoną wysokością, bo pasek się zawija. */
   --header-h: 54px;
 }
 
@@ -72,16 +73,22 @@ body {
    PASEK PODGLĄDU (poza designem) — przełącznik wersji timera.
    Celowo neutralny, systemowy font: to narzędzie, nie część gry.
    ============================================================ */
+/* Pasek zawija się, gdy sterowania nie mieszczą się w jednej linii —
+   jego realną wysokość app.js wpisuje z powrotem do --header-h, więc
+   scena pod spodem zawsze dostaje tyle miejsca, ile zostało. */
 #topbar {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: var(--header-h);
+  /* Uwaga: NIE --header-h — tę zmienną wylicza app.js z wysokości paska,
+     więc użycie jej tutaj zapętliłoby pomiar z własnym wynikiem. */
+  min-height: 54px;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 24px;
-  padding: 0 18px;
+  gap: 8px 24px;
+  padding: 6px 18px;
   background: #0a1014;
   border-bottom: 1px solid #17262c;
   font-family: "Segoe UI", system-ui, sans-serif;
@@ -194,9 +201,9 @@ body {
   bottom: 0;
 }
 
-/* Podpowiedź klawiszy stoi na końcu paska. Razem z nią pasek potrzebuje
-   do ~1535 px (tablet; instruktaż ~1470, quiz ~1305) — na węższych oknach
-   podpowiedź znika, żeby nie wyjeżdżała poza ekran. */
+/* Podpowiedź klawiszy stoi na końcu paska. Na węższych oknach znika —
+   pasek i bez niej potrafi się zawinąć, ale podpowiedź jest najmniej
+   potrzebna, więc schodzi pierwsza. */
 @media (max-width: 1540px) {
   .topbar-hint {
     display: none;
@@ -630,7 +637,8 @@ body {
   .life.losing::before,
   .res-tile.pulse,
   .pod-col.shown .pod-badge,
-  .pod-col.named .pod-text {
+  .pod-col.named .pod-text,
+  .wyp-feedback.shown {
     animation-duration: 1ms !important;
   }
 
@@ -788,10 +796,17 @@ body {
   opacity: 0.98;
 }
 
+/* Wynik gaśnie po odpadnięciu tak samo jak imię: 98 % → 80 % i bez poświaty */
 .score-value {
   font-weight: 700;
   font-size: 600px;
   text-shadow: 0 4px 37px rgba(19, 171, 180, 0.59);
+  transition: opacity 420ms ease, text-shadow 420ms ease;
+}
+
+.view.no-lives .score-value {
+  opacity: 0.8;
+  text-shadow: 0 4px 37px rgba(19, 171, 180, 0);
 }
 
 /* Imię gaśnie po odpadnięciu: 98 % → 80 % i bez poświaty */
@@ -1394,6 +1409,116 @@ body {
 .qa-round .qa-core {
   padding: 0; /* w środku nie ma tekstu */
   border-radius: 99999px;
+}
+
+/* ============================================================
+   FEEDBACK PO ODPOWIEDZI (Would You Press)
+   Figma: plik nZLMCPYklALDluh6mTvcPO, node 254-110 (dobra odpowiedź)
+   i 254-131 (zła). To osobny wariant komponentu QUIZ/button, więc różni
+   się nie tylko rdzeniem: skorupa ma inne wypełnienie, inny obrys,
+   ciaśniejszy cień i padding 15 zamiast 16 (rdzeń jest o 2 px większy).
+   Dev Mode podaje oba obrysy jako jeden płaski kolor i myli kąty
+   gradientów — wartości niżej są przeliczone z węzłów.
+   ============================================================ */
+.qa-face-fb {
+  opacity: 0;
+  transition: opacity var(--qa-press);
+}
+
+.qa[data-feedback] .qa-face-fb {
+  opacity: 1;
+}
+
+/* Skorupa wariantu feedbacku — wspólna dla obu wyników */
+.qa-round[data-feedback] .qa-shell {
+  padding: 9px; /* 15 minus obrys rdzenia 6 */
+  background-image: linear-gradient(56.392deg, rgba(3, 28, 27, 0.32) 31.87%, rgba(8, 70, 66, 0.32) 82.99%);
+  box-shadow: -5px 6px 4px 0 #061015, -10px 10px 52px 0 #051114;
+}
+
+.qa-round[data-feedback] .qa-shell::before {
+  background: linear-gradient(41.276deg, #040b0c 44.75%, rgba(205, 143, 29, 0.35) 95.71%);
+}
+
+/* Rdzeń świeci na swój kolor — w obu wynikach z blurem tła, także tam,
+   gdzie domyślna twarz była wariantem `ring` (czerwony i zielony) */
+.qa-round[data-feedback] .qa-core {
+  backdrop-filter: blur(7.5px);
+}
+
+.qa-round[data-feedback="ok"] .qa-core {
+  box-shadow:
+    0 12px 52px 6px rgba(13, 40, 5, 0.66),
+    0 0 42px 23px rgba(18, 40, 5, 0.73),
+    -2px 2px 64px 6px #030c12;
+}
+
+.qa-round[data-feedback="ok"] .qa-face-fb {
+  background:
+    linear-gradient(23.512deg, #19980e 15.16%, #0bf80b 213.59%) padding-box,
+    linear-gradient(180.531deg, #0bf80b -35.86%, #0d2805 67.39%) border-box;
+}
+
+.qa-round[data-feedback="bad"] .qa-core {
+  box-shadow:
+    0 12px 52px 6px rgba(143, 22, 22, 0.6),
+    0 0 42px 23px rgba(60, 7, 7, 0.62),
+    -2px 2px 32px 6px #030c12;
+}
+
+.qa-round[data-feedback="bad"] .qa-face-fb {
+  background:
+    linear-gradient(15.945deg, #8f1616 11.11%, #e01717 217.11%) padding-box,
+    linear-gradient(180.531deg, #e01717 -35.86%, #230606 67.39%) border-box;
+}
+
+/* Skorupa i rdzeń przenikają razem z twarzą, więc zmiana koloru jest
+   jednym ruchem, a nie przeskokiem pod spodem */
+.qa-round .qa-shell,
+.qa-round .qa-core {
+  transition: padding var(--qa-press), background-image var(--qa-press), box-shadow var(--qa-press);
+}
+
+/* Komunikat „Dobrze!” / „Źle!” — blok 1878×108 wyśrodkowany w scenie,
+   środek na y 358 (node 254-130 / 254-151). Wchodzi fade in z lekkim
+   zjazdem z góry, równocześnie z animacją utraty życia. */
+.wyp-feedback {
+  position: absolute;
+  left: 50%;
+  top: 304px;
+  transform: translateX(-50%);
+  width: 1878px;
+  height: 108px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Noto Sans", system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 72px;
+  line-height: 1.5;
+  text-align: center;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.wyp-feedback[data-outcome="ok"] {
+  color: #0bf80b; /* green/500 */
+}
+
+.wyp-feedback[data-outcome="bad"] {
+  color: #f64949; /* red/400 */
+}
+
+.wyp-feedback.shown {
+  animation: wyp-feedback-in 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes wyp-feedback-in {
+  from { opacity: 0; transform: translate(-50%, -36px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
 }
 
 /* Pasek czasu (Timer bar, node 2168-701): 1424×45 na (723, 1690).

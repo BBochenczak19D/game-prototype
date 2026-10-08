@@ -406,6 +406,32 @@ const LIFE_ANIMS = [
 ];
 const DEFAULT_ANIM = "wobble";
 
+/* --- Feedback po odpowiedzi (Would You Press) ---
+   Figma: plik nZLMCPYklALDluh6mTvcPO, node 254-110 (dobra odpowiedź)
+   i 254-131 (zła). Wciśnięty przycisk dostaje zieloną albo czerwoną
+   twarz, a nad przyciskami wchodzi komunikat. Przy złej odpowiedzi
+   równocześnie leci animacja utraty życia.
+
+   Wersja „bez” to dotychczasowe zachowanie — zostaje nietknięta. */
+const WYP_FEEDBACK = [
+  { id: "off", label: "bez",
+    title: "Dotychczasowe zachowanie — wciśnięty przycisk tylko ciemnieje" },
+  { id: "v1", label: "V1 · z tekstem",
+    title: "Przycisk zielony/czerwony + komunikat „Dobrze!” / „Źle!” (nody 254-110 i 254-131)" },
+  { id: "v2", label: "V2 · bez tekstu",
+    title: "To samo co V1, ale bez komunikatu — zostaje sam kolor przycisku" },
+];
+const DEFAULT_WYP_FEEDBACK = "off";
+
+/* Czy następne wciśnięcie ma być dobrą, czy złą odpowiedzią.
+   Teksty i kolory wprost z Figmy (72 px Noto Sans Regular, blok
+   1878×108 wyśrodkowany w scenie, środek na y 358). */
+const WYP_OUTCOMES = [
+  { id: "ok",  label: "dobra", text: "Dobrze!" },
+  { id: "bad", label: "zła",   text: "Źle!" },
+];
+const DEFAULT_WYP_OUTCOME = "ok";
+
 /* ============================================================
    WIDOK: EKRAN WYNIKU (Would You Press)
    Figma: plik nZLMCPYklALDluh6mTvcPO („Illustrations”),
@@ -594,6 +620,8 @@ const ANIM_STORAGE_KEY = "quizsteries-anim";
 const QUIZ_STORAGE_KEY = "quizsteries-quiz";
 const TIMER_COLOR_STORAGE_KEY = "quizsteries-timer-color";
 const RESULTS_STORAGE_KEY = "quizsteries-wyniki";
+const WYP_FEEDBACK_STORAGE_KEY = "quizsteries-wyp-feedback";
+const WYP_OUTCOME_STORAGE_KEY = "quizsteries-wyp-outcome";
 
 /* ============================================================
    MOTYWY — 5 zestawów kolorów.
@@ -633,6 +661,9 @@ let currentVersionId = DEFAULT_VERSION;
 let currentAnimId = DEFAULT_ANIM;
 let currentQuizVersionId = DEFAULT_QUIZ_VERSION;
 let currentTimerColorId = DEFAULT_TIMER_COLOR;
+let currentWypFeedbackId = DEFAULT_WYP_FEEDBACK;
+let currentWypOutcomeId = DEFAULT_WYP_OUTCOME;
+let feedbackEl = null; // komunikat „Dobrze!” / „Źle!” na tablecie
 let resultEls = []; // wiersze tabeli wyników, od 1. miejsca
 let podiumEl = null; // ekran celebracji zwycięzców (wersja V2)
 let podiumCols = []; // kolumny podium, indeks 0 = zwycięzca
@@ -801,9 +832,12 @@ function makeAnswer(cfg) {
   btn.style.setProperty("--qa-fill-pressed", asImage(cfg.dark.fill));
   btn.style.setProperty("--qa-stroke-pressed", asImage(cfg.dark.stroke));
 
+  /* Trzecia twarz to feedback (zielona albo czerwona) — leży na samej
+     górze i jest niewidoczna, dopóki przycisk nie dostanie data-feedback */
   btn.innerHTML =
     `<span class="qa-shell"><span class="qa-core${cfg.ring ? " ring" : ""}">` +
     `<span class="qa-face"></span><span class="qa-face qa-face-pressed"></span>` +
+    `<span class="qa-face qa-face-fb"></span>` +
     `</span></span>`;
 
   /* Sterowanie jak w quizie: wybór na dotknięcie, bez fokusu po myszy */
@@ -819,15 +853,47 @@ function makeAnswer(cfg) {
 
 /* Wciśnięty przycisk: jeden naraz, jak odpowiedź w quizie. Przy zerze żyć
    gracz nic nie wciśnie — ekran mówi „Poczekaj do końca rundy”. */
+/* Wciśnięcie odpowiedzi. W wersjach z feedbackiem wciśnięty przycisk
+   dostaje dodatkowo zieloną albo czerwoną twarz, w V1 wchodzi komunikat,
+   a zła odpowiedź zabiera życie — wszystko w tym samym momencie. */
 function pressAnswer(id) {
   if (state.lives === 0) return;
+  const zFeedbackiem = currentWypFeedbackId !== "off";
+  const wynik = WYP_OUTCOMES.find((o) => o.id === currentWypOutcomeId) || WYP_OUTCOMES[0];
+
   answerEls.forEach((el) => {
-    el.setAttribute("aria-pressed", String(el.dataset.answer === id));
+    const wybrany = el.dataset.answer === id;
+    el.setAttribute("aria-pressed", String(wybrany));
+    if (wybrany && zFeedbackiem) el.dataset.feedback = wynik.id;
+    else delete el.dataset.feedback;
   });
+
+  showFeedback(zFeedbackiem && currentWypFeedbackId === "v1" ? wynik : null);
+  if (zFeedbackiem && wynik.id === "bad") loseLife();
 }
 
 function clearPressedAnswer() {
-  answerEls.forEach((el) => el.setAttribute("aria-pressed", "false"));
+  answerEls.forEach((el) => {
+    el.setAttribute("aria-pressed", "false");
+    delete el.dataset.feedback;
+  });
+  showFeedback(null);
+}
+
+/* Komunikat wchodzi fade in z lekkim zjazdem z góry. Klasa schodzi
+   i wraca po przeliczeniu układu, żeby kolejna odpowiedź odpalała
+   animację od nowa, a nie zostawiała tekst w miejscu. */
+function showFeedback(wynik) {
+  if (!feedbackEl) return;
+  feedbackEl.classList.remove("shown");
+  if (!wynik) {
+    feedbackEl.textContent = "";
+    return;
+  }
+  feedbackEl.textContent = wynik.text;
+  feedbackEl.dataset.outcome = wynik.id;
+  void feedbackEl.offsetWidth;
+  feedbackEl.classList.add("shown");
 }
 
 /* Panel żyć: etykieta „Twoje życia:” + ramka z kryształami w środku */
@@ -884,6 +950,12 @@ function buildTablet(root) {
     return el;
   });
   root.appendChild(row);
+
+  /* Komunikat feedbacku (node 254-117 / 254-151) — pusty, dopóki gracz
+     nie odpowie; wersja „bez” nie pokazuje go w ogóle */
+  feedbackEl = document.createElement("div");
+  feedbackEl.className = "wyp-feedback";
+  root.appendChild(feedbackEl);
 
   buildLives(root);
 
@@ -1290,6 +1362,7 @@ function mountView(id) {
   litElements = [];
   lifeEls = [];
   answerEls = [];
+  feedbackEl = null;
   quizEls = null;
   clearResultsTimers();
   resultEls = [];
@@ -1309,6 +1382,7 @@ function mountView(id) {
   document.querySelectorAll(".topbar-group").forEach((group) => {
     group.hidden = !(group.dataset.views || "").split(" ").includes(view.id);
   });
+  fitScene(); // inny zestaw sterowania = inna liczba linii paska
 
   remember(VIEW_STORAGE_KEY, view.id);
 }
@@ -1355,12 +1429,21 @@ function mountQuizVersion(id) {
    ResizeObserver zamiast samego window.resize: łapie też moment,
    w którym kontener dostaje wymiary już po starcie skryptu. --- */
 function fitScene() {
+  fitTopbar(); // scena stoi pod paskiem, więc najpierw znamy jego wysokość
   const w = viewportEl.clientWidth;
   const h = viewportEl.clientHeight;
   if (!w || !h) return; // jeszcze bez layoutu — poczekaj na obserwatora
   sceneEl.style.transform =
     `translate(-50%, -50%) scale(${Math.min(w / SCENE.width, h / SCENE.height)})`;
 }
+/* Pasek podglądu zawija się na wąskich oknach, więc scena musi wiedzieć,
+   ile miejsca jej zostało — wysokość paska wraca do --header-h. */
+function fitTopbar() {
+  const bar = document.getElementById("topbar");
+  if (!bar) return;
+  document.documentElement.style.setProperty("--header-h", bar.offsetHeight + "px");
+}
+
 window.addEventListener("resize", fitScene);
 if (window.ResizeObserver) new ResizeObserver(fitScene).observe(viewportEl);
 
@@ -1485,6 +1568,28 @@ function buildTopbar() {
     anims.appendChild(btn);
   });
 
+  const feedback = document.getElementById("wyp-feedback-switch");
+  WYP_FEEDBACK.forEach((v) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = v.label;
+    btn.title = v.title;
+    btn.dataset.feedback = v.id;
+    btn.addEventListener("click", () => mountWypFeedback(v.id));
+    feedback.appendChild(btn);
+  });
+
+  const outcome = document.getElementById("wyp-outcome-switch");
+  WYP_OUTCOMES.forEach((o) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = o.label;
+    btn.title = "Następne wciśnięcie to " + o.label + " odpowiedź";
+    btn.dataset.outcome = o.id;
+    btn.addEventListener("click", () => setWypOutcome(o.id));
+    outcome.appendChild(btn);
+  });
+
   const quizSwitch = document.getElementById("quiz-switch");
   QUIZ_VERSIONS.forEach((v) => {
     const btn = document.createElement("button");
@@ -1495,6 +1600,32 @@ function buildTopbar() {
     btn.addEventListener("click", () => mountQuizVersion(v.id));
     quizSwitch.appendChild(btn);
   });
+}
+
+/* Wersja feedbacku po odpowiedzi — zmiana kasuje bieżący wybór,
+   żeby nie został na ekranie przycisk w kolorze z innej wersji */
+function mountWypFeedback(id) {
+  const wersja = WYP_FEEDBACK.find((v) => v.id === id) || WYP_FEEDBACK[0];
+  currentWypFeedbackId = wersja.id;
+
+  document.querySelectorAll("#wyp-feedback-switch button").forEach((btn) => {
+    btn.setAttribute("aria-pressed", String(btn.dataset.feedback === wersja.id));
+  });
+
+  clearPressedAnswer();
+  remember(WYP_FEEDBACK_STORAGE_KEY, wersja.id);
+}
+
+/* Czy następne wciśnięcie liczy się jako dobra, czy zła odpowiedź */
+function setWypOutcome(id) {
+  const wynik = WYP_OUTCOMES.find((o) => o.id === id) || WYP_OUTCOMES[0];
+  currentWypOutcomeId = wynik.id;
+
+  document.querySelectorAll("#wyp-outcome-switch button").forEach((btn) => {
+    btn.setAttribute("aria-pressed", String(btn.dataset.outcome === wynik.id));
+  });
+
+  remember(WYP_OUTCOME_STORAGE_KEY, wynik.id);
 }
 
 /* Wariant animacji trzymamy klasą na scenie — przeżywa przebudowę widoku */
@@ -1794,6 +1925,13 @@ currentQuizVersionId = initialChoice("quiz", QUIZ_STORAGE_KEY, QUIZ_VERSIONS.map
 currentResultsVersionId = initialChoice("wyniki", RESULTS_STORAGE_KEY, RESULTS_VERSIONS.map((v) => v.id), DEFAULT_RESULTS_VERSION);
 setLifeAnim(initialChoice("anim", ANIM_STORAGE_KEY, LIFE_ANIMS.map((a) => a.id), DEFAULT_ANIM));
 setTimerColor(initialChoice("timer", TIMER_COLOR_STORAGE_KEY, TIMER_COLORS.map((c) => c.id), DEFAULT_TIMER_COLOR));
+/* Feedback ustawiamy przed zbudowaniem widoku — mountWypFeedback sięga
+   po przyciski odpowiedzi, których jeszcze nie ma, więc tu tylko stan */
+currentWypFeedbackId = initialChoice("feedback", WYP_FEEDBACK_STORAGE_KEY, WYP_FEEDBACK.map((v) => v.id), DEFAULT_WYP_FEEDBACK);
+setWypOutcome(initialChoice("odpowiedz", WYP_OUTCOME_STORAGE_KEY, WYP_OUTCOMES.map((o) => o.id), DEFAULT_WYP_OUTCOME));
+document.querySelectorAll("#wyp-feedback-switch button").forEach((btn) => {
+  btn.setAttribute("aria-pressed", String(btn.dataset.feedback === currentWypFeedbackId));
+});
 fitScene();
 mountView(initialChoice("view", VIEW_STORAGE_KEY, VIEWS.map((v) => v.id), DEFAULT_VIEW));
 requestAnimationFrame(tick);
