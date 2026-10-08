@@ -431,12 +431,24 @@ body {
 
 /* Pojedyncze życie: pusty kryształ z nałożonym pełnym.
    Utrata = zdjęcie warstwy wierzchniej, więc pod spodem od razu jest
-   właściwy zgaszony kafelek z Figmy (a nie przyciemniony pełny). */
+   właściwy zgaszony kafelek z Figmy (a nie przyciemniony pełny).
+
+   Zmienne niżej trzymają wszystko, co zależy od rozmiaru kryształu —
+   dzięki temu ten sam zestaw @keyframes obsługuje mały kafelek
+   z tabletu i duży z ekranu wyniku (.life-xl). */
 .life {
   position: relative;
   flex-shrink: 0;
   width: 90.331px;
   height: 189px;
+  /* granice samego kryształu w pudełku obrazka (nad nim i pod nim jest
+     zapas na poświatę) — używa ich animacja „wyciek” */
+  --life-drain-a: 13.9%;
+  --life-drain-b: 68%;
+  --life-drain-c: 77.9%;
+  --life-origin-y: 45.9%; /* środek kryształu — oś kołysania */
+  --life-nudge: 1px;      /* jednostka wychyleń w „chwianiu” */
+  --life-line-h: 4px;     /* grubość opadającej linii energii */
 }
 
 .life-img {
@@ -462,6 +474,28 @@ body {
   opacity: 0;
 }
 
+/* Duży kryształ z ekranu wyniku (node 250-42 / 250-24). Kształt ten sam,
+   ale poświata w eksporcie została nieprzeskalowana, więc marginesy idą
+   w pikselach wprost z granic renderu, a nie w procentach. */
+.life-xl {
+  width: 202.883px;
+  height: 424.492px;
+  --life-drain-a: 7.73%;
+  --life-drain-b: 75.4%;
+  --life-drain-c: 87.75%;
+  --life-origin-y: 47.74%;
+  --life-nudge: 2.25px;
+  --life-line-h: 9px;
+}
+
+.life-xl .life-empty {
+  inset: -33.524px -46.32px -58.647px -43.784px;
+}
+
+.life-xl .life-full {
+  inset: -41px -53px -65px -53px;
+}
+
 /* ============================================================
    UTRATA ŻYCIA — trzy warianty animacji do porównania.
    Wariant wybiera klasa .anim-* na scenie; animuje się wyłącznie
@@ -475,7 +509,7 @@ body {
   position: absolute;
   left: -8%;
   right: -8%;
-  height: 4px;
+  height: var(--life-line-h, 4px);
   border-radius: 999px;
   background: #0dedde;
   box-shadow: 0 0 20px 5px rgba(13, 237, 222, 0.75);
@@ -484,8 +518,9 @@ body {
 }
 
 /* --- 1. Wyciek: energia opada, kryształ pustoszeje od góry ---
-   Procenty clip-path liczą się od boxu obrazka (295.5 px), w którym sam
-   kryształ zajmuje 13.9 %–77.9 % — stąd te wartości, a nie 0–100 %. */
+   Procenty clip-path liczą się od boxu obrazka, w którym sam kryształ
+   zajmuje tylko środek (nad nim i pod nim jest zapas na poświatę) —
+   stąd zmienne --life-drain-*, a nie 0–100 %. */
 #scene.anim-drain .life.losing .life-full {
   animation: life-drain 900ms cubic-bezier(0.45, 0, 0.4, 1) forwards;
 }
@@ -495,11 +530,11 @@ body {
 }
 
 @keyframes life-drain {
-  0%   { clip-path: inset(0 0 0 0);        filter: brightness(1); opacity: 1; }
-  10%  { clip-path: inset(13.9% 0 0 0);    filter: brightness(1.7); opacity: 1; }
-  80%  { clip-path: inset(68% 0 0 0);      filter: brightness(1.1); opacity: 1; }
-  92%  { clip-path: inset(77.9% 0 0 0);    filter: brightness(1); opacity: 1; }
-  100% { clip-path: inset(77.9% 0 0 0);    opacity: 0; }
+  0%   { clip-path: inset(0 0 0 0);                    filter: brightness(1); opacity: 1; }
+  10%  { clip-path: inset(var(--life-drain-a) 0 0 0);  filter: brightness(1.7); opacity: 1; }
+  80%  { clip-path: inset(var(--life-drain-b) 0 0 0);  filter: brightness(1.1); opacity: 1; }
+  92%  { clip-path: inset(var(--life-drain-c) 0 0 0);  filter: brightness(1); opacity: 1; }
+  100% { clip-path: inset(var(--life-drain-c) 0 0 0);  opacity: 0; }
 }
 
 @keyframes life-drain-line {
@@ -532,24 +567,25 @@ body {
 }
 
 /* --- 3. Chwianie: coś uderza w kryształ, ten dostaje kloca i kołysze się
-   coraz słabiej, aż stanie. Kołysanie wokół środka kryształu (45.9 %
-   wysokości obrazka, bo nad nim jest zapas na poświatę). Pierwsze wychylenie
-   najmocniejsze, każde kolejne mniejsze — stąd wrażenie uderzenia, a nie
-   równomiernego dygotania. --- */
+   coraz słabiej, aż stanie. Kołysanie wokół środka kryształu
+   (--life-origin-y wysokości obrazka, bo nad nim jest zapas na poświatę).
+   Pierwsze wychylenie najmocniejsze, każde kolejne mniejsze — stąd wrażenie
+   uderzenia, a nie równomiernego dygotania. Wychylenia liczą się od
+   --life-nudge, żeby na większym krysztale były proporcjonalne. --- */
 #scene.anim-wobble .life.losing .life-full {
-  transform-origin: 50% 45.9%;
+  transform-origin: 50% var(--life-origin-y, 45.9%);
   animation: life-wobble 560ms cubic-bezier(0.25, 0.6, 0.3, 1) forwards;
 }
 
 @keyframes life-wobble {
-  0%   { transform: translateX(0)      rotate(0deg)     scale(1, 1);       opacity: 1; filter: brightness(1); }
-  5%   { transform: translateX(5px)    rotate(3.4deg)   scale(1.07, 0.93); filter: brightness(1.8); }
-  14%  { transform: translateX(-4px)   rotate(-2.8deg)  scale(0.97, 1.03); filter: brightness(1.2); }
-  25%  { transform: translateX(3px)    rotate(2deg)     scale(1.02, 0.98); filter: brightness(1); }
-  36%  { transform: translateX(-2px)   rotate(-1.3deg)  scale(1, 1); }
-  47%  { transform: translateX(1.2px)  rotate(0.8deg); }
-  58%  { transform: translateX(-0.6px) rotate(-0.4deg); }
-  68%  { transform: translateX(0)      rotate(0deg);    filter: brightness(1); opacity: 1; }
+  0%   { transform: translateX(0)                            rotate(0deg)     scale(1, 1);       opacity: 1; filter: brightness(1); }
+  5%   { transform: translateX(calc(var(--life-nudge) * 5))   rotate(3.4deg)   scale(1.07, 0.93); filter: brightness(1.8); }
+  14%  { transform: translateX(calc(var(--life-nudge) * -4))  rotate(-2.8deg)  scale(0.97, 1.03); filter: brightness(1.2); }
+  25%  { transform: translateX(calc(var(--life-nudge) * 3))   rotate(2deg)     scale(1.02, 0.98); filter: brightness(1); }
+  36%  { transform: translateX(calc(var(--life-nudge) * -2))  rotate(-1.3deg)  scale(1, 1); }
+  47%  { transform: translateX(calc(var(--life-nudge) * 1.2)) rotate(0.8deg); }
+  58%  { transform: translateX(calc(var(--life-nudge) * -0.6)) rotate(-0.4deg); }
+  68%  { transform: translateX(0)                            rotate(0deg);    filter: brightness(1); opacity: 1; }
   82%  { filter: brightness(1.9); opacity: 1; }
   92%  { opacity: 0; }
   100% { transform: translateX(0) rotate(0deg); opacity: 0; filter: brightness(1.9); }
@@ -559,7 +595,8 @@ body {
    W połowie stoi krawędzią do widza (zerowa szerokość) — wtedy skok
    z +90° na −90° jest niewidoczny, a kafelek wraca przodem, nie lustrem.
    Jako jedyny wariant odsłania puste życie ruchem, zamiast gasić pełne. --- */
-#scene.anim-flip .lives-row {
+#scene.anim-flip .lives-row,
+#scene.anim-flip .score-lives {
   perspective: 1200px;
 }
 
@@ -658,6 +695,131 @@ body {
 @keyframes nolives-in {
   from { opacity: 0; transform: translate(-50%, calc(-50% + 24px)); }
   to   { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+/* ============================================================
+   EKRAN WYNIKU (Would You Press)
+   Figma: plik nZLMCPYklALDluh6mTvcPO, node 250-35 (gracz w grze)
+   i node 250-17 (gracz odpadł). Geometria 1:1: ramka 2748×1686
+   na (66, 57), w niej panel 2620×1558 z paddingiem 64, a w panelu
+   wyśrodkowany blok tekstu i rząd kryształów (odstęp 80).
+
+   Oba stany to ten sam ekran — klasa .no-lives na warstwie przełącza
+   tło panelu, obrys, krycie imienia i kryształów. Wszystko przez
+   zmienne, więc przejście między stanami jest jednym przenikaniem.
+   ============================================================ */
+.score-frame {
+  position: absolute;
+  display: flex;
+  padding: 62px; /* 64 minus obrys 2 (w Figmie obrys nie zajmuje miejsca) */
+  border: 2px solid transparent;
+  border-radius: 32px;
+  background:
+    linear-gradient(#030e10, #030e10) padding-box,
+    linear-gradient(22.086deg, rgba(235, 152, 63, 0.72) -2.17%, rgba(64, 38, 10, 0.24) 67.39%, #955f24 102.67%) border-box;
+}
+
+/* Panel: w stanie „w grze” jaśniejsze tło i obrys z turkusowymi końcami,
+   po odpadnięciu tło zrównane z ramką, a końce obrysu gasną do koloru
+   środkowego — oba obrysy mają więc ten sam układ stopów i różni je
+   wyłącznie kolor skrajnych. Dzięki @property te dwa kolory są dla
+   przeglądarki wartościami animowanymi, więc stany przenikają płynnie
+   zamiast przeskakiwać (gradientów o różnej liczbie stopów przeglądarka
+   nie umie interpolować). */
+@property --score-fill {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #06141a;
+}
+
+@property --score-tip {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(13, 237, 222, 0.9);
+}
+
+.score-panel {
+  --score-fill: #06141a;
+  --score-tip: rgba(13, 237, 222, 0.9);
+
+  flex: 1;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 80px;
+  padding: 0 123px; /* 126 minus obrys 3 */
+  overflow: hidden;
+  border: 3px solid transparent;
+  border-radius: 24px;
+  background:
+    linear-gradient(var(--score-fill), var(--score-fill)) padding-box,
+    linear-gradient(172.446deg,
+      var(--score-tip) 6.02%, rgba(3, 153, 144, 0.9) 15.11%,
+      rgba(7, 27, 55, 0.9) 34.68%, rgba(7, 27, 55, 0.9) 62.67%,
+      rgba(3, 153, 144, 0.9) 90.66%, var(--score-tip) 97.55%) border-box;
+  transition: --score-fill 420ms ease, --score-tip 420ms ease;
+}
+
+/* Stan po stracie wszystkich żyć (node 250-17) */
+.view.no-lives .score-panel {
+  --score-fill: #030e10;
+  --score-tip: rgba(3, 153, 144, 0.9);
+}
+
+.score-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 64px;
+  color: var(--text);
+  text-align: center;
+  white-space: nowrap;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+}
+
+.score-value,
+.score-name {
+  font-family: "Noto Sans", system-ui, sans-serif;
+  line-height: 1; /* w Figmie 100 % */
+  opacity: 0.98;
+}
+
+.score-value {
+  font-weight: 700;
+  font-size: 600px;
+  text-shadow: 0 4px 37px rgba(19, 171, 180, 0.59);
+}
+
+/* Imię gaśnie po odpadnięciu: 98 % → 80 % i bez poświaty */
+.score-name {
+  font-weight: 400;
+  font-size: 160px;
+  letter-spacing: 8px; /* 5 % z Figmy */
+  margin-right: -8px; /* tracking dokłada odstęp też po ostatniej literze */
+  text-shadow: 0 4px 37px rgba(19, 171, 180, 0.59);
+  transition: opacity 420ms ease, text-shadow 420ms ease;
+}
+
+.view.no-lives .score-name {
+  opacity: 0.8;
+  text-shadow: 0 4px 37px rgba(19, 171, 180, 0);
+}
+
+/* Rząd kryształów — po odpadnięciu cały przygasa do 50 % (Figma) */
+.score-lives {
+  display: flex;
+  align-items: flex-start;
+  gap: 80px;
+  opacity: 1;
+  transition: opacity 420ms ease;
+}
+
+.view.no-lives .score-lives {
+  opacity: 0.5;
 }
 
 /* ============================================================

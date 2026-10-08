@@ -407,6 +407,28 @@ const LIFE_ANIMS = [
 const DEFAULT_ANIM = "wobble";
 
 /* ============================================================
+   WIDOK: EKRAN WYNIKU (Would You Press)
+   Figma: plik nZLMCPYklALDluh6mTvcPO („Illustrations”),
+   node 250-35 (gracz w grze) i node 250-17 (gracz odpadł).
+   Ten sam ekran w dwóch stanach — różni je obramowanie i tło
+   panelu, krycie imienia i kryształy, więc całość jest jednym
+   widokiem przełączanym klasą .no-lives (jak na tablecie).
+
+   Uwaga: kryształy to te same kształty co na tablecie, ale
+   eksport ma inne marginesy poświaty (w Figmie ramka została
+   powiększona bez skalowania efektów), więc idą jako osobne
+   pliki `score-life*.svg`, a nie przeskalowane `life*.svg`.
+   ============================================================ */
+const SCORE = {
+  score: "300",
+  name: "Paweł",
+  /* Ramka zewnętrzna 2748×1686 wyśrodkowana w scenie 2880×1800 */
+  frame: { x: 66, y: 57, w: 2748, h: 1686 },
+  lifeAsset: "assets/score-life.svg",        // Group 5/6/7 — identyczne
+  emptyAsset: "assets/score-life-empty.svg", // Group 10/9/8
+};
+
+/* ============================================================
    WIDOK: QUIZ (drugi tryb tabletu gracza)
    Figma: plik UCzHnyMnTZ2AS0PnYsw6eR, node 2168-692
    („Quiz/Pytanie i odpowiedzi”) — pytanie, 4 odpowiedzi 2×2,
@@ -549,16 +571,21 @@ const VIEWS = [
   { id: "instruktaz", label: "Instruktaż",           build: buildInstruktaz },
   { id: "tablet",     label: "Tablet gracza · Would You Press", build: buildTablet },
   { id: "quiz",       label: "Tablet gracza · quiz", build: buildQuiz },
+  { id: "wynik",      label: "Ekran wyniku · Would You Press", build: buildScore },
   { id: "wyniki",     label: "Instruktaż · wyniki",  build: buildResults },
 ];
 const DEFAULT_VIEW = "instruktaz";
+
+/* Widoki z panelem żyć — dzielą sterowanie w pasku i mechanikę utraty życia */
+const LIVES_VIEWS = ["tablet", "wynik"];
 
 /* Podpowiedzi klawiszowe — inne dla każdego widoku */
 const HINTS = {
   instruktaz: "spacja — pauza · ←/→ — runda · R — restart",
   tablet: "kliknij przycisk · Z — tracisz życie · 0–3 — skok do stanu · R — restart",
   quiz: "kliknij odpowiedź · spacja — pauza · R — od nowa · 1–3 — wersja",
-  wyniki: "R — odtwórz animację od nowa · 1/2 — wersja",
+  wynik: "Z — tracisz życie · 0–3 — skok do stanu · R — pełne życia",
+  wyniki: "R — odtwórz animację od nowa · 1–3 — wersja",
 };
 
 const STORAGE_KEY = "quizsteries-version";
@@ -872,6 +899,56 @@ function buildTablet(root) {
   renderLives();
 
   /* Tablet nie ma rund — kolory bierze z motywu bazowego */
+  applyTheme(THEMES[0]);
+}
+
+/* ============================================================
+   EKRAN WYNIKU — wynik, imię i życia w ramce na całą scenę
+   ============================================================ */
+
+/* --- Widok ekranu wyniku: ramka → panel → (wynik + imię) + kryształy.
+   Kryształy trafiają do tej samej tablicy `lifeEls` co na tablecie,
+   więc setLives/loseLife i wszystkie warianty animacji działają tu
+   bez żadnego osobnego kodu. --- */
+function buildScore(root) {
+  const frame = document.createElement("div");
+  frame.className = "score-frame";
+  frame.style.left = SCORE.frame.x + "px";
+  frame.style.top = SCORE.frame.y + "px";
+  frame.style.width = SCORE.frame.w + "px";
+  frame.style.height = SCORE.frame.h + "px";
+
+  const panel = document.createElement("div");
+  panel.className = "score-panel";
+
+  const text = document.createElement("div");
+  text.className = "score-text";
+  text.innerHTML = `<div class="score-value"></div><div class="score-name"></div>`;
+  text.querySelector(".score-value").textContent = SCORE.score;
+  text.querySelector(".score-name").textContent = SCORE.name;
+  panel.appendChild(text);
+
+  /* Kryształ = pusty pod spodem, pełny na wierzchu (jak na tablecie) */
+  const row = document.createElement("div");
+  row.className = "score-lives";
+  lifeEls = [];
+  for (let i = 0; i < LIVES.max; i++) {
+    const life = document.createElement("div");
+    life.className = "life life-xl";
+    life.innerHTML =
+      `<img class="life-img life-empty" src="${SCORE.emptyAsset}" alt="">` +
+      `<img class="life-img life-full" src="${SCORE.lifeAsset}" alt="">`;
+    row.appendChild(life);
+    lifeEls.push(life);
+  }
+  panel.appendChild(row);
+
+  frame.appendChild(panel);
+  root.appendChild(frame);
+
+  renderLives();
+
+  /* Ekran wyniku nie ma rund — kolory bierze z motywu bazowego */
   applyTheme(THEMES[0]);
 }
 
@@ -1227,10 +1304,10 @@ function mountView(id) {
 
   document.getElementById("view-select").value = view.id;
   document.getElementById("topbar-hint").textContent = HINTS[view.id];
-  /* Każdy widok ma w pasku własną grupę sterowania: #ctrl-<id widoku> */
-  VIEWS.forEach((v) => {
-    const group = document.getElementById("ctrl-" + v.id);
-    if (group) group.hidden = v.id !== view.id;
+  /* Grupa sterowania sama mówi, na których ekranach ma być widoczna
+     (data-views) — panel żyć obsługuje dwa ekrany naraz */
+  document.querySelectorAll(".topbar-group").forEach((group) => {
+    group.hidden = !(group.dataset.views || "").split(" ").includes(view.id);
   });
 
   remember(VIEW_STORAGE_KEY, view.id);
@@ -1481,9 +1558,10 @@ function syncLivesSwitch() {
   });
 }
 
-/* Zero żyć = przygaszone przyciski + komunikat (Figma node 1936-11876) */
+/* Zero żyć = na tablecie przygaszone przyciski i komunikat (node 1936-11876),
+   na ekranie wyniku przygaszony panel i imię (node 250-17) */
 function applyNoLives() {
-  viewEl.classList.toggle("no-lives", state.lives === 0 && currentViewId === "tablet");
+  viewEl.classList.toggle("no-lives", state.lives === 0 && LIVES_VIEWS.includes(currentViewId));
 }
 
 function loseLife() {
@@ -1669,8 +1747,9 @@ window.addEventListener("keydown", (e) => {
       if (currentViewId === "quiz") startQuestion();
       if (currentViewId === "wyniki") playResults();
       break;
-    /* Cyfry: na instruktażu wersja timera (1–5), na tablecie liczba żyć (0–3),
-       w quizie wersja wciśnięcia (1–3). Cyfry spoza zakresu są ignorowane. */
+    /* Cyfry: na instruktażu wersja timera (1–5), tam gdzie są życia liczba
+       żyć (0–3), w quizie wersja wciśnięcia (1–3), na wynikach wersja
+       animacji (1–3). Cyfry spoza zakresu są ignorowane. */
     case "Digit0":
     case "Digit1":
     case "Digit2":
@@ -1678,7 +1757,7 @@ window.addEventListener("keydown", (e) => {
     case "Digit4":
     case "Digit5": {
       const n = Number(e.code.slice(5));
-      if (currentViewId === "tablet") {
+      if (LIVES_VIEWS.includes(currentViewId)) {
         if (n <= LIVES.max) setLives(n);
       } else if (currentViewId === "quiz") {
         if (n >= 1 && QUIZ_VERSIONS[n - 1]) mountQuizVersion(QUIZ_VERSIONS[n - 1].id);

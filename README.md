@@ -15,11 +15,12 @@ pozycje.
 | **Instruktaż** | ekran wspólny: treść zadania + timer rundy |
 | **Tablet gracza · Would You Press** | ekran w rękach gracza: punkty, 4 okrągłe przyciski do wciskania, panel żyć |
 | **Tablet gracza · quiz** | pytanie, 4 odpowiedzi 2×2 z animacją wciśnięcia, pasek czasu |
+| **Ekran wyniku · Would You Press** | wynik gracza, imię i życia — w grze albo po odpadnięciu |
 | **Instruktaż · wyniki** | ekran wspólny po grze: tabela wyników i ekran podium, w trzech wariantach animacji |
 
 Można wysłać link prosto do jednego ekranu, dopisując `?view=` do adresu:
-`?view=instruktaz`, `?view=tablet`, `?view=quiz`. Wybór zapamiętuje się
-w przeglądarce.
+`?view=instruktaz`, `?view=tablet`, `?view=quiz`, `?view=wynik`,
+`?view=wyniki`. Wybór zapamiętuje się w przeglądarce.
 
 ## Ekran: Instruktaż
 
@@ -178,10 +179,16 @@ a na środku wchodzi komunikat „Straciłeś wszystkie życia / Poczekaj do ko�
 rundy". Instruktaż leci dalej — runda się nie zatrzymuje, dokładnie jak mówi
 ten komunikat.
 
-### Trzy warianty animacji utraty życia
+### Cztery warianty animacji utraty życia
 
 Kafelek to pusty kryształ z nałożonym pełnym; animowana jest tylko warstwa
 wierzchnia, więc pod spodem od razu jest właściwy zgaszony kafelek z Figmy.
+
+Ten sam zestaw animacji obsługuje także **ekran wyniku**, gdzie kryształy są
+2,25 × większe. Wszystko, co zależy od rozmiaru (granice kryształu w pudełku
+obrazka, oś kołysania, siła wychyleń, grubość linii energii), siedzi
+w zmiennych `--life-*` na `.life` — duży kafelek nadpisuje je klasą
+`.life-xl` i korzysta z tych samych `@keyframes`.
 
 | Wariant | Co się dzieje |
 | --- | --- |
@@ -196,6 +203,41 @@ w adresie: `?anim=` z `drain`, `burnout`, `wobble`, `flip`. Domyślny:
 
 Przyciski `3 / 2 / 1 / 0` skaczą wprost do stanu, bez animacji — animację
 odpala utrata pojedynczego życia (`−1 życie` albo klawisz `Z`).
+
+## Ekran: Ekran wyniku · Would You Press
+
+Osobny ekran gry Would You Press: w ramce na całą scenę wynik gracza, jego
+imię i te same trzy kryształy życia co na tablecie — więc i ta sama
+mechanika. Panel żyć w pasku (`3 / 2 / 1 / 0`, `−1 życie`, wybór animacji)
+jest wspólny dla obu ekranów Would You Press.
+
+### Dwa stany tego samego ekranu
+
+| Stan | Figma | Czym się różni |
+| --- | --- | --- |
+| **gracz w grze** | node `250-35` | jaśniejsze tło panelu (`#06141a`), obrys z turkusowymi końcami, imię z poświatą przy 98 % krycia, kryształy pełne |
+| **gracz odpadł** | node `250-17` | tło panelu zrównane z ramką (`#030e10`), z obrysu znikają jasne końce, imię bez poświaty przy 80 %, kryształy puste i przygaszone do 50 % |
+
+To jeden widok, nie dwa — stan przełącza liczba żyć (zero = odpadł), tak jak
+na tablecie. Przejście między nimi jest jednym płynnym przenikaniem (420 ms):
+tło panelu, końce obrysu, krycie imienia i krycie rzędu kryształów zmieniają
+się równocześnie. Zaczyna się dopiero wtedy, gdy ostatni kryształ dopali się
+wybranym wariantem animacji — najpierw gaśnie życie, potem gaśnie ekran.
+
+Obrys panelu jest gradientem, a przeglądarka nie umie przenikać między
+gradientami o różnej liczbie stopów — dlatego oba stany mają ten sam układ
+stopów, a różni je tylko kolor skrajnych, trzymany w `@property --score-tip`
+(zmienne zarejestrowane przez `@property` są animowalne, zwykłe nie).
+
+### Kryształy
+
+Kształt ten sam co na tablecie, ale w Figmie ramkę powiększono bez skalowania
+efektów — poświata została tej samej wielkości, więc eksport ma inne
+marginesy. Stąd osobne pliki `assets/score-life.svg` (308,883 × 530,492)
+i `assets/score-life-empty.svg` (292,986 × 516,663), a nie przeskalowane
+`life.svg`. Marginesy poświaty idą w CSS w pikselach wprost z granic renderu
+w Figmie: pełny −41 / −53 / +65 / +53, pusty −33,524 / −43,784 / +58,647
+/ +46,32.
 
 ## Ekran: Tablet gracza · quiz
 
@@ -267,7 +309,7 @@ ale siedzą w historii gita (commit `d56814d`), więc da się je przywrócić.
 | `1`–`5` | wersja timera (na instruktażu) |
 | `1`–`3` | wersja animacji wciśnięcia (w quizie) |
 | `1`–`3` | wersja animacji wyników (na ekranie wyników) |
-| `0`–`3` | skok wprost do stanu żyć (na tablecie, bez animacji) |
+| `0`–`3` | skok wprost do stanu żyć (na tablecie i ekranie wyniku, bez animacji) |
 | `Z` | zła odpowiedź — jedno życie mniej, z animacją |
 
 ## Jak to działa
@@ -305,6 +347,15 @@ w `assets/`:
 - **Tablet gracza, brak żyć** — ten sam plik, node `1936-11876`: przyciski
   na 40 % krycia, pusty kryształ (`life-empty.svg`, node `1936-11886`)
   i komunikat (Frame 165) 1772×360 na środku sceny.
+- **Ekran wyniku · Would You Press** — **trzeci plik**:
+  `nZLMCPYklALDluh6mTvcPO` („Illustrations"), node `250-35` (gracz w grze)
+  i `250-17` (gracz odpadł). Ramka 2748×1686 na (66, 57), w niej panel
+  2620×1558 z paddingiem 64 i obrysami gradientowymi (2 px i 3 px, oba
+  INSIDE). W panelu wyśrodkowany blok: wynik Noto Sans Bold 600 px,
+  imię Noto Sans Regular 160 px z trackingiem 5 %, odstęp 64, a pod nim
+  (odstęp 80) rząd trzech kryształów 202,883×424,492 co 80 px.
+  Dev Mode podaje oba obrysy jako jeden płaski kolor — w węzłach to
+  gradienty liniowe, więc policzone są z `gradientTransform`.
 
 - **Tablet gracza · quiz** — ten sam plik, node `2168-692` („Quiz/Pytanie
   i odpowiedzi”): tło `bg-quiz.png`, punkty i pytanie w Noto Sans Medium,

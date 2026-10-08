@@ -7,7 +7,7 @@
   <!-- Noto Sans Medium — font widoku quizu (Caudex leży lokalnie w assets/fonts) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@500;700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;700&display=swap" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -28,13 +28,15 @@
     <span class="topbar-title">Quizsteries</span>
     <select id="view-select" aria-label="Ekran"></select>
 
-    <div id="ctrl-instruktaz" class="topbar-group">
+    <!-- data-views mówi, na których ekranach grupa jest widoczna; panel żyć
+         obsługuje dwa ekrany Would You Press, więc ma ich na liście dwa -->
+    <div class="topbar-group" data-views="instruktaz">
       <div id="version-switch" class="switch" role="group" aria-label="Wersja timera"></div>
       <span>kolor</span>
       <div id="timer-color-switch" class="switch" role="group" aria-label="Kolor timera"></div>
     </div>
 
-    <div id="ctrl-tablet" class="topbar-group">
+    <div class="topbar-group" data-views="tablet wynik">
       <span>życia</span>
       <div id="lives-switch" class="switch" role="group" aria-label="Liczba żyć"></div>
       <div class="switch">
@@ -44,11 +46,11 @@
       <div id="anim-switch" class="switch" role="group" aria-label="Wariant animacji utraty życia"></div>
     </div>
 
-    <div id="ctrl-quiz" class="topbar-group">
+    <div class="topbar-group" data-views="quiz">
       <div id="quiz-switch" class="switch" role="group" aria-label="Wersja animacji wciśnięcia"></div>
     </div>
 
-    <div id="ctrl-wyniki" class="topbar-group">
+    <div class="topbar-group" data-views="wyniki">
       <div id="results-switch" class="switch" role="group" aria-label="Wersja animacji wyników"></div>
       <div class="switch">
         <button type="button" id="results-replay">▶ od nowa</button>
