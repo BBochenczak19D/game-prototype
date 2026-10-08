@@ -407,19 +407,19 @@ const LIFE_ANIMS = [
 const DEFAULT_ANIM = "wobble";
 
 /* --- Feedback po odpowiedzi (Would You Press) ---
-   Figma: plik nZLMCPYklALDluh6mTvcPO, node 254-110 (dobra odpowiedź)
-   i 254-131 (zła). Wciśnięty przycisk dostaje zieloną albo czerwoną
-   twarz, a nad przyciskami wchodzi komunikat. Przy złej odpowiedzi
-   równocześnie leci animacja utraty życia.
+   Po wciśnięciu przycisku gracz dostaje informację, czy odpowiedział
+   dobrze. Feedback jest wyłącznie tekstowy — wariant z zielonym
+   i czerwonym przyciskiem został odrzucony przy przeglądzie.
+   Przy złej odpowiedzi równocześnie leci animacja utraty życia.
 
    Wersja „bez” to dotychczasowe zachowanie — zostaje nietknięta. */
 const WYP_FEEDBACK = [
   { id: "off", label: "bez",
     title: "Dotychczasowe zachowanie — wciśnięty przycisk tylko ciemnieje" },
-  { id: "v1", label: "V1 · z tekstem",
-    title: "Przycisk zielony/czerwony + komunikat „Dobrze!” / „Źle!” (nody 254-110 i 254-131)" },
-  { id: "v2", label: "V2 · bez tekstu",
-    title: "To samo co V1, ale bez komunikatu — zostaje sam kolor przycisku" },
+  { id: "v1", label: "V1 · tekst",
+    title: "Komunikat „Dobrze!” / „Źle!” wchodzi fade in z lekkim zjazdem z góry (nody 254-110 i 254-131)" },
+  { id: "v2", label: "V2 · ramka ERROR",
+    title: "Zła odpowiedź: ramka ERROR rozwijana od środka plus trzęsienie przyciskiem (node 260-250)" },
 ];
 const DEFAULT_WYP_FEEDBACK = "off";
 
@@ -431,6 +431,16 @@ const WYP_OUTCOMES = [
   { id: "bad", label: "zła",   text: "Źle!" },
 ];
 const DEFAULT_WYP_OUTCOME = "ok";
+
+/* Ramka komunikatu z node 260-250 („fedback message”): blok 427,436×207
+   na (1226, 282), w nim tabliczka 406×182 i cztery narożniki 93×91.
+   Narożniki to jeden kształt obracany lustrzanie, stąd jeden plik. */
+const WYP_PLATE = {
+  x: 1226, y: 282, w: 427.436, h: 207,
+  text: "ERROR",
+  plateAsset: "assets/error-plate.svg",
+  cornerAsset: "assets/error-corner.svg",
+};
 
 /* ============================================================
    WIDOK: EKRAN WYNIKU (Would You Press)
@@ -664,6 +674,7 @@ let currentTimerColorId = DEFAULT_TIMER_COLOR;
 let currentWypFeedbackId = DEFAULT_WYP_FEEDBACK;
 let currentWypOutcomeId = DEFAULT_WYP_OUTCOME;
 let feedbackEl = null; // komunikat „Dobrze!” / „Źle!” na tablecie
+let plateEl = null; // ramka ERROR (V2) na tablecie
 let resultEls = []; // wiersze tabeli wyników, od 1. miejsca
 let podiumEl = null; // ekran celebracji zwycięzców (wersja V2)
 let podiumCols = []; // kolumny podium, indeks 0 = zwycięzca
@@ -832,12 +843,9 @@ function makeAnswer(cfg) {
   btn.style.setProperty("--qa-fill-pressed", asImage(cfg.dark.fill));
   btn.style.setProperty("--qa-stroke-pressed", asImage(cfg.dark.stroke));
 
-  /* Trzecia twarz to feedback (zielona albo czerwona) — leży na samej
-     górze i jest niewidoczna, dopóki przycisk nie dostanie data-feedback */
   btn.innerHTML =
     `<span class="qa-shell"><span class="qa-core${cfg.ring ? " ring" : ""}">` +
     `<span class="qa-face"></span><span class="qa-face qa-face-pressed"></span>` +
-    `<span class="qa-face qa-face-fb"></span>` +
     `</span></span>`;
 
   /* Sterowanie jak w quizie: wybór na dotknięcie, bez fokusu po myszy */
@@ -853,43 +861,58 @@ function makeAnswer(cfg) {
 
 /* Wciśnięty przycisk: jeden naraz, jak odpowiedź w quizie. Przy zerze żyć
    gracz nic nie wciśnie — ekran mówi „Poczekaj do końca rundy”. */
-/* Wciśnięcie odpowiedzi. W wersjach z feedbackiem wciśnięty przycisk
-   dostaje dodatkowo zieloną albo czerwoną twarz, w V1 wchodzi komunikat,
-   a zła odpowiedź zabiera życie — wszystko w tym samym momencie. */
+/* Wciśnięcie odpowiedzi. W wersjach z feedbackiem wchodzi komunikat,
+   a zła odpowiedź zabiera życie — w tym samym momencie. W V2 zła
+   odpowiedź dodatkowo trzęsie wciśniętym przyciskiem. */
 function pressAnswer(id) {
   if (state.lives === 0) return;
   const zFeedbackiem = currentWypFeedbackId !== "off";
   const wynik = WYP_OUTCOMES.find((o) => o.id === currentWypOutcomeId) || WYP_OUTCOMES[0];
+  const trzesie = zFeedbackiem && currentWypFeedbackId === "v2" && wynik.id === "bad";
 
   answerEls.forEach((el) => {
     const wybrany = el.dataset.answer === id;
     el.setAttribute("aria-pressed", String(wybrany));
-    if (wybrany && zFeedbackiem) el.dataset.feedback = wynik.id;
-    else delete el.dataset.feedback;
+    el.classList.remove("shake");
+    if (wybrany && trzesie) {
+      void el.offsetWidth; // restart animacji przy kolejnej złej odpowiedzi
+      el.classList.add("shake");
+    }
   });
 
-  showFeedback(zFeedbackiem && currentWypFeedbackId === "v1" ? wynik : null);
+  showFeedback(zFeedbackiem ? wynik : null);
   if (zFeedbackiem && wynik.id === "bad") loseLife();
 }
 
 function clearPressedAnswer() {
   answerEls.forEach((el) => {
     el.setAttribute("aria-pressed", "false");
-    delete el.dataset.feedback;
+    el.classList.remove("shake");
   });
   showFeedback(null);
 }
 
-/* Komunikat wchodzi fade in z lekkim zjazdem z góry. Klasa schodzi
+/* Komunikat ma dwie postaci: zwykły tekst (V1, a w V2 dobra odpowiedź)
+   i ramkę ERROR rozwijaną od środka (V2, zła odpowiedź). Klasa schodzi
    i wraca po przeliczeniu układu, żeby kolejna odpowiedź odpalała
-   animację od nowa, a nie zostawiała tekst w miejscu. */
+   animację od nowa, a nie zostawiała komunikat w miejscu. */
 function showFeedback(wynik) {
-  if (!feedbackEl) return;
+  if (!feedbackEl || !plateEl) return;
   feedbackEl.classList.remove("shown");
+  plateEl.classList.remove("shown");
+
   if (!wynik) {
     feedbackEl.textContent = "";
     return;
   }
+
+  if (currentWypFeedbackId === "v2" && wynik.id === "bad") {
+    feedbackEl.textContent = "";
+    void plateEl.offsetWidth;
+    plateEl.classList.add("shown");
+    return;
+  }
+
   feedbackEl.textContent = wynik.text;
   feedbackEl.dataset.outcome = wynik.id;
   void feedbackEl.offsetWidth;
@@ -951,11 +974,27 @@ function buildTablet(root) {
   });
   root.appendChild(row);
 
-  /* Komunikat feedbacku (node 254-117 / 254-151) — pusty, dopóki gracz
+  /* Komunikat feedbacku (node 254-130 / 254-151) — pusty, dopóki gracz
      nie odpowie; wersja „bez” nie pokazuje go w ogóle */
   feedbackEl = document.createElement("div");
   feedbackEl.className = "wyp-feedback";
   root.appendChild(feedbackEl);
+
+  /* Ramka ERROR (node 260-250) — druga postać komunikatu, używana
+     w V2 przy złej odpowiedzi. Leży gotowa i czeka na klasę .shown. */
+  plateEl = document.createElement("div");
+  plateEl.className = "wyp-plate";
+  plateEl.style.left = WYP_PLATE.x + "px";
+  plateEl.style.top = WYP_PLATE.y + "px";
+  plateEl.style.width = WYP_PLATE.w + "px";
+  plateEl.style.height = WYP_PLATE.h + "px";
+  plateEl.innerHTML =
+    `<img class="wyp-plate-bg" src="${WYP_PLATE.plateAsset}" alt="">` +
+    ["tl", "tr", "bl", "br"]
+      .map((rog) => `<span class="wyp-corner ${rog}"><img src="${WYP_PLATE.cornerAsset}" alt=""></span>`)
+      .join("") +
+    `<span class="wyp-plate-text">${WYP_PLATE.text}</span>`;
+  root.appendChild(plateEl);
 
   buildLives(root);
 
@@ -1363,6 +1402,7 @@ function mountView(id) {
   lifeEls = [];
   answerEls = [];
   feedbackEl = null;
+  plateEl = null;
   quizEls = null;
   clearResultsTimers();
   resultEls = [];

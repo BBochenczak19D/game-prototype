@@ -638,7 +638,10 @@ body {
   .res-tile.pulse,
   .pod-col.shown .pod-badge,
   .pod-col.named .pod-text,
-  .wyp-feedback.shown {
+  .wyp-feedback.shown,
+  .wyp-plate.shown,
+  .wyp-plate.shown .wyp-plate-text,
+  .qa-round.shake {
     animation-duration: 1ms !important;
   }
 
@@ -1413,70 +1416,28 @@ body {
 
 /* ============================================================
    FEEDBACK PO ODPOWIEDZI (Would You Press)
-   Figma: plik nZLMCPYklALDluh6mTvcPO, node 254-110 (dobra odpowiedź)
-   i 254-131 (zła). To osobny wariant komponentu QUIZ/button, więc różni
-   się nie tylko rdzeniem: skorupa ma inne wypełnienie, inny obrys,
-   ciaśniejszy cień i padding 15 zamiast 16 (rdzeń jest o 2 px większy).
-   Dev Mode podaje oba obrysy jako jeden płaski kolor i myli kąty
-   gradientów — wartości niżej są przeliczone z węzłów.
+   Feedback jest wyłącznie tekstowy — wariant z zielonym i czerwonym
+   przyciskiem (nody 254-110 / 254-131) został odrzucony przy przeglądzie
+   i jego style zostały stąd usunięte.
    ============================================================ */
-.qa-face-fb {
-  opacity: 0;
-  transition: opacity var(--qa-press);
+
+/* Zła odpowiedź w V2: przycisk dostaje w kość jak pole hasła w iOS.
+   Wychylenia słabną, więc czuć uderzenie, a nie równe dygotanie.
+   Skala 0.98 musi być w każdej klatce, bo animacja transformu
+   nadpisuje transform z reguły `.qa[aria-pressed="true"]`. */
+.qa-round.shake {
+  animation: qa-shake 560ms linear;
 }
 
-.qa[data-feedback] .qa-face-fb {
-  opacity: 1;
-}
-
-/* Skorupa wariantu feedbacku — wspólna dla obu wyników */
-.qa-round[data-feedback] .qa-shell {
-  padding: 9px; /* 15 minus obrys rdzenia 6 */
-  background-image: linear-gradient(56.392deg, rgba(3, 28, 27, 0.32) 31.87%, rgba(8, 70, 66, 0.32) 82.99%);
-  box-shadow: -5px 6px 4px 0 #061015, -10px 10px 52px 0 #051114;
-}
-
-.qa-round[data-feedback] .qa-shell::before {
-  background: linear-gradient(41.276deg, #040b0c 44.75%, rgba(205, 143, 29, 0.35) 95.71%);
-}
-
-/* Rdzeń świeci na swój kolor — w obu wynikach z blurem tła, także tam,
-   gdzie domyślna twarz była wariantem `ring` (czerwony i zielony) */
-.qa-round[data-feedback] .qa-core {
-  backdrop-filter: blur(7.5px);
-}
-
-.qa-round[data-feedback="ok"] .qa-core {
-  box-shadow:
-    0 12px 52px 6px rgba(13, 40, 5, 0.66),
-    0 0 42px 23px rgba(18, 40, 5, 0.73),
-    -2px 2px 64px 6px #030c12;
-}
-
-.qa-round[data-feedback="ok"] .qa-face-fb {
-  background:
-    linear-gradient(23.512deg, #19980e 15.16%, #0bf80b 213.59%) padding-box,
-    linear-gradient(180.531deg, #0bf80b -35.86%, #0d2805 67.39%) border-box;
-}
-
-.qa-round[data-feedback="bad"] .qa-core {
-  box-shadow:
-    0 12px 52px 6px rgba(143, 22, 22, 0.6),
-    0 0 42px 23px rgba(60, 7, 7, 0.62),
-    -2px 2px 32px 6px #030c12;
-}
-
-.qa-round[data-feedback="bad"] .qa-face-fb {
-  background:
-    linear-gradient(15.945deg, #8f1616 11.11%, #e01717 217.11%) padding-box,
-    linear-gradient(180.531deg, #e01717 -35.86%, #230606 67.39%) border-box;
-}
-
-/* Skorupa i rdzeń przenikają razem z twarzą, więc zmiana koloru jest
-   jednym ruchem, a nie przeskokiem pod spodem */
-.qa-round .qa-shell,
-.qa-round .qa-core {
-  transition: padding var(--qa-press), background-image var(--qa-press), box-shadow var(--qa-press);
+@keyframes qa-shake {
+  0%   { transform: translateX(0)     scale(0.98); }
+  12%  { transform: translateX(-28px) scale(0.98); }
+  26%  { transform: translateX(26px)  scale(0.98); }
+  40%  { transform: translateX(-20px) scale(0.98); }
+  54%  { transform: translateX(15px)  scale(0.98); }
+  68%  { transform: translateX(-9px)  scale(0.98); }
+  82%  { transform: translateX(5px)   scale(0.98); }
+  100% { transform: translateX(0)     scale(0.98); }
 }
 
 /* Komunikat „Dobrze!” / „Źle!” — blok 1878×108 wyśrodkowany w scenie,
@@ -1519,6 +1480,93 @@ body {
 @keyframes wyp-feedback-in {
   from { opacity: 0; transform: translate(-50%, -36px); }
   to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ============================================================
+   RAMKA ERROR (V2, zła odpowiedź) — Figma node 260-250, grupa
+   „fedback message”: blok 427,436×207 na (1226, 282), w nim tabliczka
+   406×182 na (10, 13) i cztery narożniki 93×91 po rogach. Narożnik to
+   jeden kształt odbijany lustrzanie, stąd jeden plik SVG; obrys 3 px
+   leży na środku linii, więc plik jest o 1,5 px większy z dwóch stron.
+   Ramka rozwija się od środka: najpierw w poziom, potem w pion.
+   ============================================================ */
+.wyp-plate {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.wyp-plate-bg {
+  position: absolute;
+  left: 10px;
+  top: 13px;
+  width: 406px;
+  height: 182px;
+}
+
+/* Pudełko narożnika ma wymiary z Figmy, a obrazek wystaje o 1,5 px —
+   odbicia idą po pudełku, żeby zapas trafiał na właściwą stronę */
+.wyp-corner {
+  position: absolute;
+  width: 93px;
+  height: 91px;
+}
+
+.wyp-corner > img {
+  position: absolute;
+  left: -1.5px;
+  top: -1.5px;
+  width: 94.5px;
+  height: 92.5px;
+}
+
+.wyp-corner.tl { left: 0; top: 0; }
+.wyp-corner.tr { left: 334.436px; top: 0; transform: scaleX(-1); }
+.wyp-corner.bl { left: 0; top: 116px; transform: scaleY(-1); }
+.wyp-corner.br { left: 334.436px; top: 116px; transform: scale(-1, -1); }
+
+/* „ERROR”: Noto Sans Bold 90 px, tracking 5 %, red/500, z ciemnym
+   obrysem 4 px na zewnątrz liter (stąd podwójna grubość i paint-order) */
+.wyp-plate-text {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: "Noto Sans", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 90px;
+  line-height: 1.5;
+  letter-spacing: 4.5px;
+  text-indent: 4.5px; /* tracking dokłada odstęp po ostatniej literze */
+  color: #e01717;
+  text-align: center;
+  -webkit-text-stroke: 8px rgba(42, 22, 2, 0.5);
+  paint-order: stroke fill;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.wyp-plate.shown {
+  animation: wyp-plate-in 460ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Napis dochodzi dopiero, gdy ramka jest już rozwinięta */
+.wyp-plate.shown .wyp-plate-text {
+  animation: wyp-plate-text-in 260ms ease-out 260ms both;
+}
+
+@keyframes wyp-plate-in {
+  0%   { opacity: 0; transform: scale(0.02, 0.16); }
+  35%  { opacity: 1; transform: scale(1.03, 0.16); }
+  65%  { opacity: 1; transform: scale(1, 1.08); }
+  100% { opacity: 1; transform: scale(1, 1); }
+}
+
+@keyframes wyp-plate-text-in {
+  from { opacity: 0; transform: translateY(-50%) scale(0.86); }
+  to   { opacity: 1; transform: translateY(-50%) scale(1); }
 }
 
 /* Pasek czasu (Timer bar, node 2168-701): 1424×45 na (723, 1690).

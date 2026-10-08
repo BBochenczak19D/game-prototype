@@ -213,17 +213,28 @@ dobrze. W pasku są dwa przełączniki: **feedback** (wersja) i **dobra / zła**
 | Wersja | Co się dzieje po wciśnięciu |
 | --- | --- |
 | **bez** | dotychczasowe zachowanie — przycisk tylko ciemnieje, nic więcej się nie dzieje |
-| **V1 · z tekstem** | wciśnięty przycisk robi się zielony albo czerwony, a nad przyciskami wchodzi „Dobrze!" / „Źle!" |
-| **V2 · bez tekstu** | to samo, ale bez komunikatu — zostaje sam kolor przycisku |
+| **V1 · tekst** | nad przyciskami wchodzi „Dobrze!" / „Źle!" — fade in z lekkim zjazdem z góry (36 px, 420 ms) |
+| **V2 · ramka ERROR** | zła odpowiedź: ramka **ERROR** rozwijana od środka, a wciśnięty przycisk trzęsie się na boki |
 
-Komunikat wchodzi fade in z lekkim zjazdem z góry (36 px, 420 ms), a przy
-złej odpowiedzi **równocześnie** rusza animacja utraty życia w wybranym
-wariancie. Przycisk zostaje w kolorze do następnej odpowiedzi albo do `R`.
+Przy złej odpowiedzi **równocześnie** rusza animacja utraty życia
+w wybranym wariancie. Komunikat zostaje do następnej odpowiedzi albo do `R`.
 
-Kolor feedbacku to osobny wariant komponentu z Figmy, więc różni się nie
-tylko rdzeń: skorupa ma inne wypełnienie, inny obrys, ciaśniejszy cień
-i padding 15 zamiast 16 (rdzeń jest o 2 px większy). Zmiana koloru,
-rozmiaru i cienia leci jednym przejściem, tym samym, co wciśnięcie.
+Feedback jest wyłącznie tekstowy. Wariant, w którym wciśnięty przycisk
+robił się zielony albo czerwony (nody `254-110` i `254-131`), został
+odrzucony przy przeglądzie i jego kod został usunięty — na obu
+przywołanych ekranach z Figmy ten kolor jeszcze jest, w prototypie już
+nie.
+
+**V2 — ramka ERROR** (node `260-250`): blok 427,436×207 na (1226, 282),
+w nim tabliczka 406×182 i cztery narożniki 93×91 po rogach (jeden kształt
+odbijany lustrzanie, stąd jeden plik SVG). Rozwija się od środka: najpierw
+w poziom do pełnej szerokości, potem w pion z lekkim przeskoczeniem, a na
+końcu dochodzi napis (460 ms razem). Trzęsienie przyciskiem to ten sam
+pomysł co pole hasła w iOS — siedem wychyleń, każde słabsze (560 ms).
+
+W Figmie jest tylko stan dla złej odpowiedzi, więc **dobra odpowiedź
+pokazuje w V2 ten sam zielony tekst co w V1**. Gdyby miała dostać własną
+ramkę, trzeba do niej designu.
 
 Wersję można też podać w adresie: `?feedback=off|v1|v2` oraz
 `?odpowiedz=ok|bad`.
@@ -386,10 +397,15 @@ w `assets/`:
 
 - **Tablet gracza, feedback po odpowiedzi** — plik
   `nZLMCPYklALDluh6mTvcPO`, node `254-110` (dobra odpowiedź) i `254-131`
-  (zła). Wciśnięty przycisk dostaje wariant komponentu QUIZ/button z innym
-  rdzeniem, skorupą i cieniami; komunikat to blok 1878×108 wyśrodkowany
+  (zła). Z tych dwóch został sam komunikat: blok 1878×108 wyśrodkowany
   w scenie (środek na y 358), Noto Sans Regular 72 px, `#0bf80b` dla
-  „Dobrze!" i `#f64949` dla „Źle!".
+  „Dobrze!" i `#f64949` dla „Źle!". Kolorowanie wciśniętego przycisku,
+  które też tam jest, zostało odrzucone.
+- **Tablet gracza, ramka ERROR** — ten sam plik, node `260-250`, grupa
+  „fedback message": tabliczka `#5B1213` przy 40 % krycia i cztery
+  narożniki obrysowane 3 px `#e01717` (obrys na środku linii, więc plik
+  SVG jest o 1,5 px większy z dwóch stron). Napis Noto Sans Bold 90 px,
+  tracking 5 %, z ciemnym obrysem 4 px na zewnątrz liter.
   **Uwaga — te dwa ekrany mają nowszy panel żyć i inny font punktów**
   (ramka 647×261 bez podpisu „Twoje życia:", punkty w Noto Sans zamiast
   Caudex). Prototyp został przy starszej wersji z node `1935-11833`, bo
