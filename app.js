@@ -619,9 +619,25 @@ const SEQ = {
   announceMs: 3000,   // zapowiedź: „Przygotuj się”, przyciski zablokowane
   answerMs: 18000,    // czas na odpowiedź (scenariusz zaleca 15–20 s)
   revealStepMs: 1000, // odstęp między zapaleniem kolejnych slotów
-  plateDelayMs: 1000, // po ostatnim slocie wchodzi ramka OK / ERROR
-  breakMs: 4000,      // przerwa po feedbacku, potem pytanie od nowa
+  plateDelayMs: 1000, // odstęp między blokiem slotów a ramką OK / ERROR
+  plateHoldMs: 1500,  // ile stoi gotowy feedback, zanim zejdzie komunikat
+  correctDelayMs: 600,  // od zejścia komunikatu do pierwszego poprawnego numeru
+  correctStepMs: 700,   // odstęp między kolejnymi poprawnymi numerami
+  correctHoldMs: 1200,  // ile stoi gotowa poprawna kolejność
+  breakMs: 4000,      // przerwa na końcu, potem pytanie od nowa
 };
+
+/* Dwie wersje kolejności feedbacku do porównania. Sam zestaw kroków jest
+   ten sam — różni je to, czy tekstowe OK / ERROR wchodzi po zapaleniu
+   slotów, czy przed nim. Trzeci etap (poprawna kolejność przy złej
+   odpowiedzi) jest w obu taki sam. */
+const SEQ_VERSIONS = [
+  { id: "v1", label: "V1 · kafelki → tekst",
+    title: "Najpierw sloty zapalają się po kolei, na końcu wchodzi OK / ERROR" },
+  { id: "v2", label: "V2 · tekst → kafelki",
+    title: "Najpierw wchodzi OK / ERROR, dopiero potem sloty po kolei" },
+];
+const DEFAULT_SEQ_VERSION = "v1";
 
 /* Odpowiedzi w kolejności siatki: górny rząd L→P, dolny rząd L→P.
    `place` = miejsce tej odpowiedzi w poprawnej kolejności (1–4); tu
@@ -701,7 +717,7 @@ const HINTS = {
   instruktaz: "spacja — pauza · ←/→ — runda · R — restart",
   tablet: "kliknij przycisk · Z — tracisz życie · 0–3 — skok do stanu · R — restart",
   quiz: "kliknij odpowiedź · spacja — pauza · R — od nowa · 1–3 — wersja",
-  kolejnosc: "klikaj odpowiedzi w swojej kolejności · spacja — pauza · R — od nowa",
+  kolejnosc: "klikaj odpowiedzi w swojej kolejności · spacja — pauza · R — od nowa · 1–2 — wersja",
   wynik: "Z — tracisz życie · 0–3 — skok do stanu · R — pełne życia",
   wyniki: "R — odtwórz animację od nowa · 1–3 — wersja",
 };
@@ -714,6 +730,7 @@ const TIMER_COLOR_STORAGE_KEY = "quizsteries-timer-color";
 const RESULTS_STORAGE_KEY = "quizsteries-wyniki";
 const WYP_FEEDBACK_STORAGE_KEY = "quizsteries-wyp-feedback";
 const WYP_OUTCOME_STORAGE_KEY = "quizsteries-wyp-outcome";
+const SEQ_STORAGE_KEY = "quizsteries-kolejnosc";
 
 /* ============================================================
    MOTYWY — 5 zestawów kolorów.
@@ -753,6 +770,7 @@ let currentViewId = DEFAULT_VIEW;
 let currentVersionId = DEFAULT_VERSION;
 let currentAnimId = DEFAULT_ANIM;
 let currentQuizVersionId = DEFAULT_QUIZ_VERSION;
+let currentSeqVersionId = DEFAULT_SEQ_VERSION;
 let currentTimerColorId = DEFAULT_TIMER_COLOR;
 let currentWypFeedbackId = DEFAULT_WYP_FEEDBACK;
 let currentWypOutcomeId = DEFAULT_WYP_OUTCOME;
@@ -1629,6 +1647,20 @@ function mountVersion(id) {
   startRound(state.roundIndex); // restart rundy, żeby animacja poszła od zera
 }
 
+/* Wersja kolejności feedbacku. Zmienia tylko rozkład jazdy ujawniania,
+   więc wystarczy zrestartować pytanie — przyciski zostają te same. */
+function mountSeqVersion(id) {
+  const version = SEQ_VERSIONS.find((v) => v.id === id) || SEQ_VERSIONS[0];
+  currentSeqVersionId = version.id;
+
+  document.querySelectorAll("#seq-switch button").forEach((btn) => {
+    btn.setAttribute("aria-pressed", String(btn.dataset.seq === version.id));
+  });
+
+  if (seqEls) startSeqQuestion();
+  remember(SEQ_STORAGE_KEY, version.id);
+}
+
 /* Wersja quizu: przyciski budujemy od nowa, więc od razu stoją w nowej
    twarzy domyślnej (bez przejścia ze starej), a pytanie startuje od zera. */
 function mountQuizVersion(id) {
@@ -1754,6 +1786,17 @@ function buildTopbar() {
     results.appendChild(btn);
   });
   document.getElementById("results-replay").addEventListener("click", playResults);
+
+  const seqVersions = document.getElementById("seq-switch");
+  SEQ_VERSIONS.forEach((v) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = v.label;
+    btn.title = v.title;
+    btn.dataset.seq = v.id;
+    btn.addEventListener("click", () => mountSeqVersion(v.id));
+    seqVersions.appendChild(btn);
+  });
 
   const seqAuto = document.getElementById("seq-auto-switch");
   [
@@ -1914,6 +1957,7 @@ const seq = {
   elapsedInPhase: 0,
   frozenAt: 0,
   picks: [],
+  correctShown: 0, // ile numerów poprawnej kolejności już weszło
 };
 
 /* --- Życia ---
@@ -2046,16 +2090,18 @@ function startSeqQuestion() {
   seq.picks = [];
   seq.lit = 0;
   seq.plateShown = false;
+  seq.correctShown = 0;
   if (!seqEls) return;
 
   seqEls.rows.forEach(({ slot, number }) => {
     number.textContent = "";
+    number.classList.remove("wchodzi");
     slot.classList.remove("lit");
     slot.style.removeProperty("--qa-fill-lit");
     slot.style.removeProperty("--qa-stroke-lit");
     slot.style.removeProperty("--qa-glow-lit");
   });
-  seqEls.plate.classList.remove("shown");
+  seqEls.plate.classList.remove("shown", "leaving");
   seqEls.plate.innerHTML = "";
   seqEls.prompt.classList.remove("gone");
   seqEls.announce.classList.add("shown");
@@ -2082,6 +2128,14 @@ function pressSeq(id) {
   if (seq.picks.length === SEQ_ANSWERS.length) startSeqReveal();
 }
 
+/* Zmiana fazy z wyzerowaniem jej zegara */
+function startSeqPhase(phase, now = performance.now()) {
+  seq.phase = phase;
+  seq.phaseStart = now;
+  seq.elapsedInPhase = 0;
+  seq.frozenAt = 0;
+}
+
 /* Przejście do ujawniania wyniku — po czwartym wciśnięciu albo po czasie.
    Niepełna odpowiedź to zgodnie ze scenariuszem brak odpowiedzi, więc
    wchodzi tak samo, tylko bez kompletu numerów. */
@@ -2089,13 +2143,50 @@ function startSeqReveal() {
   /* Ekrany feedbacku w Figmie nie mają już polecenia — pytanie jest
      rozstrzygnięte, a ramka OK / ERROR wchodzi dokładnie w jego miejsce. */
   if (seqEls) seqEls.prompt.classList.add("gone");
-  seq.phase = "reveal";
-  seq.phaseStart = performance.now();
-  seq.elapsedInPhase = 0;
-  seq.frozenAt = 0;
   seq.lit = 0;
   seq.plateShown = false;
   setSeqLocked(true);
+  startSeqPhase("reveal");
+}
+
+/* Rozkład jazdy ujawniania. Oba kroki — zapalanie slotów i ramka
+   OK / ERROR — są w obu wersjach te same, zmienia się tylko ich
+   kolejność. Po ostatnim z nich gotowy feedback stoi jeszcze
+   `plateHoldMs`, więc `end` to moment domknięcia całej fazy. */
+function seqSchedule() {
+  const ostatniSlot = (SEQ_ANSWERS.length - 1) * SEQ.revealStepMs;
+  const plan = currentSeqVersionId === "v2"
+    ? { plate: 0, slot: (i) => SEQ.plateDelayMs + i * SEQ.revealStepMs,
+        koniecKrokow: SEQ.plateDelayMs + ostatniSlot }
+    : { plate: ostatniSlot + SEQ.plateDelayMs, slot: (i) => i * SEQ.revealStepMs,
+        koniecKrokow: ostatniSlot + SEQ.plateDelayMs };
+  return { ...plan, end: plan.koniecKrokow + SEQ.plateHoldMs };
+}
+
+/* Trzeci etap — tylko przy złej odpowiedzi. Komunikat schodzi, sloty
+   wracają do stanu neutralnego i pustoszeją, a potem wchodzą w nie po
+   kolei numery poprawnej kolejności (od pierwszego miejsca). */
+function startSeqCorrect(now) {
+  seq.correctShown = 0;
+  seqEls.plate.classList.remove("shown");
+  seqEls.plate.classList.add("leaving");
+  seqEls.rows.forEach(({ slot, number }) => {
+    slot.classList.remove("lit");
+    number.classList.remove("wchodzi");
+    number.textContent = "";
+  });
+  startSeqPhase("correct", now);
+}
+
+/* Numer dla miejsca `index + 1` — trafia do tej odpowiedzi, która
+   powinna na tym miejscu stać. */
+function showCorrectNumber(index) {
+  const cfg = SEQ_ANSWERS.find((a) => a.place === index + 1);
+  const { number } = seqEls.rows.find((r) => r.cfg.id === cfg.id);
+  number.textContent = String(cfg.place);
+  number.classList.remove("wchodzi");
+  void number.offsetWidth;
+  number.classList.add("wchodzi");
 }
 
 /* Czy dana odpowiedź stoi na swoim miejscu. Niepełna sekwencja to
@@ -2131,6 +2222,7 @@ function showSeqPlate() {
       .join("") +
     `<span class="wyp-plate-text"></span>`;
   plate.querySelector(".wyp-plate-text").textContent = cfg.text;
+  plate.classList.remove("leaving");
   void plate.offsetWidth;
   plate.classList.add("shown");
 }
@@ -2187,20 +2279,31 @@ function tickSekwencja(now) {
     setSeqProgress(progress);
     if (progress >= 1) startSeqReveal(); // czas minął = niepełna odpowiedź
   } else if (seq.phase === "reveal") {
-    /* Sloty zapalają się po kolei tak, jak leżą na ekranie (czerwony,
-       żółty, niebieski, zielony), a tekstowy feedback dochodzi dopiero
-       po ostatnim z nich. */
-    const due = Math.min(Math.floor(elapsed / SEQ.revealStepMs) + 1, seqEls.rows.length);
-    while (seq.lit < due) litSeqSlot(seq.lit++);
-
-    const plateAt = (seqEls.rows.length - 1) * SEQ.revealStepMs + SEQ.plateDelayMs;
-    if (!seq.plateShown && elapsed >= plateAt) {
+    const plan = seqSchedule();
+    /* Sloty zapalają się po kolei tak, jak leżą na ekranie: czerwony,
+       żółty, niebieski, zielony. */
+    while (seq.lit < seqEls.rows.length && elapsed >= plan.slot(seq.lit)) litSeqSlot(seq.lit++);
+    if (!seq.plateShown && elapsed >= plan.plate) {
       showSeqPlate();
       seq.plateShown = true;
-      seq.phase = "break";
-      seq.phaseStart = now;
-      seq.elapsedInPhase = 0;
     }
+    if (elapsed >= plan.end) {
+      /* Przy dobrej odpowiedzi nie ma czego pokazywać — gracz widzi
+         własną kolejność i same zielone sloty. */
+      if (SEQ_ANSWERS.every(seqRowOk)) startSeqPhase("break", now);
+      else startSeqCorrect(now);
+    }
+  } else if (seq.phase === "correct") {
+    /* Poprawne numery wchodzą po kolei od pierwszego miejsca */
+    if (elapsed >= SEQ.correctDelayMs) {
+      const due = Math.min(
+        Math.floor((elapsed - SEQ.correctDelayMs) / SEQ.correctStepMs) + 1,
+        SEQ_ANSWERS.length
+      );
+      while (seq.correctShown < due) showCorrectNumber(seq.correctShown++);
+    }
+    const koniec = SEQ.correctDelayMs + (SEQ_ANSWERS.length - 1) * SEQ.correctStepMs + SEQ.correctHoldMs;
+    if (elapsed >= koniec) startSeqPhase("break", now);
   } else if (elapsed >= SEQ.breakMs) {
     startSeqQuestion();
   }
@@ -2317,6 +2420,8 @@ window.addEventListener("keydown", (e) => {
         if (n <= LIVES.max) setLives(n);
       } else if (currentViewId === "quiz") {
         if (n >= 1 && QUIZ_VERSIONS[n - 1]) mountQuizVersion(QUIZ_VERSIONS[n - 1].id);
+      } else if (currentViewId === "kolejnosc") {
+        if (n >= 1 && SEQ_VERSIONS[n - 1]) mountSeqVersion(SEQ_VERSIONS[n - 1].id);
       } else if (currentViewId === "wyniki") {
         if (n >= 1 && RESULTS_VERSIONS[n - 1]) mountResultsVersion(RESULTS_VERSIONS[n - 1].id);
       } else if (n >= 1 && VERSIONS[n - 1]) {
@@ -2348,6 +2453,7 @@ buildTopbar();
 currentVersionId = initialChoice("v", STORAGE_KEY, VERSIONS.map((v) => v.id), DEFAULT_VERSION);
 currentQuizVersionId = initialChoice("quiz", QUIZ_STORAGE_KEY, QUIZ_VERSIONS.map((v) => v.id), DEFAULT_QUIZ_VERSION);
 currentResultsVersionId = initialChoice("wyniki", RESULTS_STORAGE_KEY, RESULTS_VERSIONS.map((v) => v.id), DEFAULT_RESULTS_VERSION);
+currentSeqVersionId = initialChoice("kolejnosc", SEQ_STORAGE_KEY, SEQ_VERSIONS.map((v) => v.id), DEFAULT_SEQ_VERSION);
 setLifeAnim(initialChoice("anim", ANIM_STORAGE_KEY, LIFE_ANIMS.map((a) => a.id), DEFAULT_ANIM));
 setTimerColor(initialChoice("timer", TIMER_COLOR_STORAGE_KEY, TIMER_COLORS.map((c) => c.id), DEFAULT_TIMER_COLOR));
 /* Feedback ustawiamy przed zbudowaniem widoku — mountWypFeedback sięga
@@ -2356,6 +2462,9 @@ currentWypFeedbackId = initialChoice("feedback", WYP_FEEDBACK_STORAGE_KEY, WYP_F
 setWypOutcome(initialChoice("odpowiedz", WYP_OUTCOME_STORAGE_KEY, WYP_OUTCOMES.map((o) => o.id), DEFAULT_WYP_OUTCOME));
 document.querySelectorAll("#wyp-feedback-switch button").forEach((btn) => {
   btn.setAttribute("aria-pressed", String(btn.dataset.feedback === currentWypFeedbackId));
+});
+document.querySelectorAll("#seq-switch button").forEach((btn) => {
+  btn.setAttribute("aria-pressed", String(btn.dataset.seq === currentSeqVersionId));
 });
 fitScene();
 mountView(initialChoice("view", VIEW_STORAGE_KEY, VIEWS.map((v) => v.id), DEFAULT_VIEW));

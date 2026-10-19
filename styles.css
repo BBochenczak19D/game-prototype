@@ -642,7 +642,9 @@ body {
   .wyp-plate.shown,
   .wyp-plate.shown .wyp-plate-text,
   .qa-round.shake,
-  .seq-tile.tap {
+  .seq-tile.tap,
+  .seq-number.wchodzi,
+  .wyp-plate.leaving {
     animation-duration: 1ms !important;
   }
 
@@ -1570,6 +1572,18 @@ body {
   animation: wyp-plate-in 460ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
+/* Zejście ramki — w konkurencji „kolejność” komunikat znika, zanim
+   wejdzie poprawna kolejność. Bez tego ramka zgasłaby przeskokiem,
+   bo stan końcowy trzyma animacja wejścia. */
+.wyp-plate.leaving {
+  animation: wyp-plate-out 320ms ease forwards;
+}
+
+@keyframes wyp-plate-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
 /* Napis dochodzi dopiero, gdy ramka jest już rozwinięta */
 .wyp-plate.shown .wyp-plate-text {
   animation: wyp-plate-text-in 260ms ease-out 260ms both;
@@ -1746,6 +1760,19 @@ body {
 .seq-slot.lit .qa-core {
   backdrop-filter: blur(7.5px);
   box-shadow: var(--qa-glow-lit);
+}
+
+/* Trzeci etap: poprawna kolejność. Sloty są z powrotem neutralne (ten
+   sam stan co przed odpowiedzią), a numery wchodzą w nie po kolei —
+   każdy z lekkim wskokiem, żeby było widać, który właśnie doszedł.
+   W Figmie tego etapu nie ma, animacja jest autorska. */
+.seq-number.wchodzi {
+  animation: seq-number-in 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes seq-number-in {
+  from { opacity: 0; transform: scale(0.72); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 /* Wciśnięcie kafelka. W Figmie są tylko stany przed i po — kafelek po

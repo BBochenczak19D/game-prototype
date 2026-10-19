@@ -354,7 +354,8 @@ w slocie pojawia się numer pozycji.
 | --- | --- | --- |
 | **zapowiedź** | tablet pokazuje „Przygotuj się", przyciski zablokowane | 3 s |
 | **odpowiadanie** | cztery odpowiedzi, pasek czasu, gracz klika w swojej kolejności | 18 s |
-| **ujawnianie** | sloty zapalają się po kolei, na końcu ramka OK / ERROR | 4 s |
+| **ujawnianie** | sloty zapalają się po kolei i wchodzi ramka OK / ERROR, potem gotowy feedback stoi | 5,5 s |
+| **poprawna kolejność** | tylko przy złej odpowiedzi: komunikat schodzi, sloty wracają do neutralnych i wchodzą w nie poprawne numery | 4,2 s |
 | **przerwa** | stan końcowy stoi, potem pytanie od nowa | 4 s |
 
 Scenariusz zaleca na odpowiadanie 15–20 s. Wszystkie czasy siedzą
@@ -372,13 +373,20 @@ Wszystkie są zaimplementowane i sprawdzone:
 - niepełna sekwencja po upływie czasu to **brak odpowiedzi**: nawet
   miejsca, które gracz zdążył trafić, zapalają się na czerwono.
 
-### Animacja ujawniania
+### Ujawnianie wyniku — dwie wersje do porównania
 
-Sloty zapalają się **po kolei tak, jak leżą na ekranie** — czerwony,
-żółty, niebieski, zielony — co sekundę, a tekstowy feedback OK / ERROR
-wchodzi dopiero po ostatnim z nich (ta sama ramka co na Would You Press,
-tylko wyżej i w dwóch kolorach). Na czas ujawniania znika polecenie —
-tak jak na ekranach feedbacku w Figmie, gdzie go nie ma.
+Feedback ma dwa kroki: **zapalenie slotów po kolei** (czerwony, żółty,
+niebieski, zielony — tak, jak leżą na ekranie, co sekundę) i **tekstowe
+OK / ERROR** (ta sama ramka co na Would You Press, tylko wyżej i w dwóch
+kolorach). Wersje różnią się wyłącznie kolejnością tych dwóch kroków:
+
+| Wersja | Przebieg |
+| --- | --- |
+| **V1 · kafelki → tekst** | sloty zapalają się po kolei, dopiero na końcu wchodzi OK / ERROR |
+| **V2 · tekst → kafelki** | najpierw wchodzi OK / ERROR, dopiero potem sloty po kolei |
+
+Na czas feedbacku znika polecenie — tak jak na ekranach feedbacku
+w Figmie, gdzie go nie ma.
 
 **Slot świeci na zielono, jeśli ta odpowiedź stoi na swoim miejscu, a na
 czerwono, jeśli nie.** W Figmie są tylko dwa skrajne przypadki (wszystko
@@ -387,6 +395,26 @@ nich ujawnianie kafelek po kafelku nie niosłoby żadnej informacji, bo
 pierwszy zapalony slot zdradzałby cały wynik. Gdyby feedback miał być
 „wszystko albo nic", wystarczy w `seqRowOk` zwracać wynik całej
 sekwencji.
+
+Wersję przełącza się w pasku, klawiszami `1` / `2` albo w adresie:
+`?view=kolejnosc&kolejnosc=v1`, `…&kolejnosc=v2`. Wybór zapamiętuje się
+w przeglądarce.
+
+### Trzeci etap: poprawna kolejność
+
+**Tylko przy złej odpowiedzi** — po tym, jak gotowy feedback postoi
+1,5 s. Komunikat OK / ERROR schodzi, sloty wracają do stanu neutralnego
+i pustoszeją, a potem wchodzą w nie **numery poprawnej kolejności, po
+kolei od pierwszego miejsca** (co 0,7 s, każdy z lekkim wskokiem).
+Gracz zostaje więc z obrazem prawidłowej odpowiedzi, a nie własnej.
+
+Przy dobrej odpowiedzi tego etapu nie ma — nie ma czego pokazywać,
+bo gracz widzi własną kolejność i same zielone sloty.
+
+Etap jest wspólny dla obu wersji; w Figmie go nie ma, animacja jest
+autorska. Numery wchodzą w kolejności miejsc (1 → 2 → 3 → 4), więc
+„skaczą" po ekranie — gdyby lepiej czytało się przejście rzędami,
+wystarczy zmienić kolejność w `showCorrectNumber`.
 
 ### Podgląd w pasku
 
@@ -405,6 +433,7 @@ zapowiedzi.
 | `1`–`5` | wersja timera (na instruktażu) |
 | `1`–`3` | wersja animacji wciśnięcia (w quizie) |
 | `1`–`3` | wersja animacji wyników (na ekranie wyników) |
+| `1`–`2` | wersja kolejności feedbacku (na ekranie kolejności) |
 | `R` | na ekranie kolejności: pytanie od nowa (od zapowiedzi) |
 | `0`–`3` | skok wprost do stanu żyć (na tablecie i ekranie wyniku, bez animacji) |
 | `Z` | zła odpowiedź — jedno życie mniej, z animacją |
