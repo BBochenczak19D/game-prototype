@@ -621,6 +621,8 @@ const SEQ = {
   revealStepMs: 1000, // odstęp między zapaleniem kolejnych slotów
   plateDelayMs: 1000, // odstęp między blokiem slotów a ramką OK / ERROR
   plateHoldMs: 1500,  // ile stoi gotowy feedback, zanim zejdzie komunikat
+  errorHoldExtraMs: 2000, // przy złej odpowiedzi ERROR stoi o tyle dłużej
+  correctLabel: "Poprawna kolejność", // wchodzi w miejsce komunikatu
   correctDelayMs: 600,  // od zejścia komunikatu do pierwszego poprawnego numeru
   correctStepMs: 700,   // odstęp między kolejnymi poprawnymi numerami
   correctHoldMs: 1200,  // ile stoi gotowa poprawna kolejność
@@ -1329,6 +1331,12 @@ function buildSekwencja(root) {
   plate.style.height = SEQ_PLATE.h + "px";
   root.appendChild(plate);
 
+  /* Napis trzeciego etapu — staje dokładnie tam, gdzie był komunikat */
+  const correctLabel = document.createElement("div");
+  correctLabel.className = "seq-correct-label";
+  correctLabel.textContent = SEQ.correctLabel;
+  root.appendChild(correctLabel);
+
   /* Zapowiedź zasłania cały ekran — w Figmie to osobna klatka na czarnym
      tle (node 2417-53978), z tą samą ramką i panelem co ekran wyniku. */
   const announce = document.createElement("div");
@@ -1338,7 +1346,7 @@ function buildSekwencja(root) {
     `<div class="score-panel"><span class="seq-announce-text">Przygotuj się</span></div></div>`;
   root.appendChild(announce);
 
-  seqEls = { rows, bar, plate, announce, prompt };
+  seqEls = { rows, bar, plate, announce, prompt, correctLabel };
 
   applyTheme(THEMES[0]);
   startSeqQuestion();
@@ -2103,6 +2111,7 @@ function startSeqQuestion() {
   });
   seqEls.plate.classList.remove("shown", "leaving");
   seqEls.plate.innerHTML = "";
+  seqEls.correctLabel.classList.remove("shown");
   seqEls.prompt.classList.remove("gone");
   seqEls.announce.classList.add("shown");
   setSeqProgress(0);
@@ -2152,24 +2161,30 @@ function startSeqReveal() {
 /* Rozkład jazdy ujawniania. Oba kroki — zapalanie slotów i ramka
    OK / ERROR — są w obu wersjach te same, zmienia się tylko ich
    kolejność. Po ostatnim z nich gotowy feedback stoi jeszcze
-   `plateHoldMs`, więc `end` to moment domknięcia całej fazy. */
-function seqSchedule() {
+   `plateHoldMs`, a przy złej odpowiedzi dodatkowo `errorHoldExtraMs` —
+   ERROR ma chwilę zostać, zanim ustąpi miejsca poprawnej kolejności.
+   `end` to moment domknięcia całej fazy. */
+function seqSchedule(dobrze) {
   const ostatniSlot = (SEQ_ANSWERS.length - 1) * SEQ.revealStepMs;
   const plan = currentSeqVersionId === "v2"
     ? { plate: 0, slot: (i) => SEQ.plateDelayMs + i * SEQ.revealStepMs,
         koniecKrokow: SEQ.plateDelayMs + ostatniSlot }
     : { plate: ostatniSlot + SEQ.plateDelayMs, slot: (i) => i * SEQ.revealStepMs,
         koniecKrokow: ostatniSlot + SEQ.plateDelayMs };
-  return { ...plan, end: plan.koniecKrokow + SEQ.plateHoldMs };
+  const hold = SEQ.plateHoldMs + (dobrze ? 0 : SEQ.errorHoldExtraMs);
+  return { ...plan, end: plan.koniecKrokow + hold };
 }
 
 /* Trzeci etap — tylko przy złej odpowiedzi. Komunikat schodzi, sloty
    wracają do stanu neutralnego i pustoszeją, a potem wchodzą w nie po
-   kolei numery poprawnej kolejności (od pierwszego miejsca). */
+   kolei numery poprawnej kolejności (od pierwszego miejsca).
+   W miejscu komunikatu staje napis „Poprawna kolejność", żeby nie było
+   wątpliwości, że to już nie jest odpowiedź gracza. */
 function startSeqCorrect(now) {
   seq.correctShown = 0;
   seqEls.plate.classList.remove("shown");
   seqEls.plate.classList.add("leaving");
+  seqEls.correctLabel.classList.add("shown");
   seqEls.rows.forEach(({ slot, number }) => {
     slot.classList.remove("lit");
     number.classList.remove("wchodzi");
@@ -2279,7 +2294,8 @@ function tickSekwencja(now) {
     setSeqProgress(progress);
     if (progress >= 1) startSeqReveal(); // czas minął = niepełna odpowiedź
   } else if (seq.phase === "reveal") {
-    const plan = seqSchedule();
+    const dobrze = SEQ_ANSWERS.every(seqRowOk);
+    const plan = seqSchedule(dobrze);
     /* Sloty zapalają się po kolei tak, jak leżą na ekranie: czerwony,
        żółty, niebieski, zielony. */
     while (seq.lit < seqEls.rows.length && elapsed >= plan.slot(seq.lit)) litSeqSlot(seq.lit++);
@@ -2290,7 +2306,7 @@ function tickSekwencja(now) {
     if (elapsed >= plan.end) {
       /* Przy dobrej odpowiedzi nie ma czego pokazywać — gracz widzi
          własną kolejność i same zielone sloty. */
-      if (SEQ_ANSWERS.every(seqRowOk)) startSeqPhase("break", now);
+      if (dobrze) startSeqPhase("break", now);
       else startSeqCorrect(now);
     }
   } else if (seq.phase === "correct") {

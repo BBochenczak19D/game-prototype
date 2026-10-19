@@ -354,8 +354,8 @@ w slocie pojawia się numer pozycji.
 | --- | --- | --- |
 | **zapowiedź** | tablet pokazuje „Przygotuj się", przyciski zablokowane | 3 s |
 | **odpowiadanie** | cztery odpowiedzi, pasek czasu, gracz klika w swojej kolejności | 18 s |
-| **ujawnianie** | sloty zapalają się po kolei i wchodzi ramka OK / ERROR, potem gotowy feedback stoi | 5,5 s |
-| **poprawna kolejność** | tylko przy złej odpowiedzi: komunikat schodzi, sloty wracają do neutralnych i wchodzą w nie poprawne numery | 4,2 s |
+| **ujawnianie** | sloty zapalają się po kolei i wchodzi ramka OK / ERROR, potem gotowy feedback stoi | 5,5 s (przy ERROR 7,5 s) |
+| **poprawna kolejność** | tylko przy złej odpowiedzi: komunikat schodzi, wchodzi napis „Poprawna kolejność", sloty wracają do neutralnych i wchodzą w nie poprawne numery | 4,2 s |
 | **przerwa** | stan końcowy stoi, potem pytanie od nowa | 4 s |
 
 Scenariusz zaleca na odpowiadanie 15–20 s. Wszystkie czasy siedzą
@@ -402,17 +402,21 @@ w przeglądarce.
 
 ### Trzeci etap: poprawna kolejność
 
-**Tylko przy złej odpowiedzi** — po tym, jak gotowy feedback postoi
-1,5 s. Komunikat OK / ERROR schodzi, sloty wracają do stanu neutralnego
+**Tylko przy złej odpowiedzi.** ERROR stoi najpierw 3,5 s — o 2 s
+dłużej niż OK, żeby gracz zdążył zobaczyć własny wynik, zanim ekran
+przejdzie do nauki. Potem komunikat schodzi, a na jego miejsce wchodzi
+napis **„Poprawna kolejność"** (ten sam krój co polecenie, w beżu — to
+etykieta, a nie werdykt). Sloty wracają do stanu neutralnego
 i pustoszeją, a potem wchodzą w nie **numery poprawnej kolejności, po
 kolei od pierwszego miejsca** (co 0,7 s, każdy z lekkim wskokiem).
 Gracz zostaje więc z obrazem prawidłowej odpowiedzi, a nie własnej.
 
 Przy dobrej odpowiedzi tego etapu nie ma — nie ma czego pokazywać,
-bo gracz widzi własną kolejność i same zielone sloty.
+bo gracz widzi własną kolejność i same zielone sloty — i nie ma też
+dodatkowych 2 s, więc OK schodzi od razu do przerwy.
 
-Etap jest wspólny dla obu wersji; w Figmie go nie ma, animacja jest
-autorska. Numery wchodzą w kolejności miejsc (1 → 2 → 3 → 4), więc
+Etap jest wspólny dla obu wersji; w Figmie go nie ma, animacja i napis
+są autorskie. Numery wchodzą w kolejności miejsc (1 → 2 → 3 → 4), więc
 „skaczą" po ekranie — gdyby lepiej czytało się przejście rzędami,
 wystarczy zmienić kolejność w `showCorrectNumber`.
 

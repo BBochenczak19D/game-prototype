@@ -644,7 +644,8 @@ body {
   .qa-round.shake,
   .seq-tile.tap,
   .seq-number.wchodzi,
-  .wyp-plate.leaving {
+  .wyp-plate.leaving,
+  .seq-correct-label.shown {
     animation-duration: 1ms !important;
   }
 
@@ -1760,6 +1761,39 @@ body {
 .seq-slot.lit .qa-core {
   backdrop-filter: blur(7.5px);
   box-shadow: var(--qa-glow-lit);
+}
+
+/* Napis trzeciego etapu. Stoi w środku pola, które zajmował komunikat
+   OK / ERROR (427,436×207 na (1226, 351,19), czyli środek 1440 × 454,69),
+   i wchodzi dopiero wtedy, gdy ten komunikat zdąży zejść. Krój ten sam
+   co polecenie — to tekst tego ekranu, nie werdykt, więc zostaje
+   w beżu, a nie w zieleni czy czerwieni. */
+.seq-correct-label {
+  position: absolute;
+  left: 1440px;
+  top: 454.69px;
+  transform: translate(-50%, -50%);
+  font-family: "Noto Sans", system-ui, sans-serif;
+  font-weight: 700;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 90px;
+  line-height: 1.5;
+  color: var(--text);
+  text-align: center;
+  white-space: nowrap;
+  user-select: none;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.seq-correct-label.shown {
+  animation: seq-label-in 420ms cubic-bezier(0.22, 1, 0.36, 1) 200ms forwards;
+}
+
+@keyframes seq-label-in {
+  from { opacity: 0; transform: translate(-50%, calc(-50% - 24px)); }
+  to   { opacity: 1; transform: translate(-50%, -50%); }
 }
 
 /* Trzeci etap: poprawna kolejność. Sloty są z powrotem neutralne (ten
