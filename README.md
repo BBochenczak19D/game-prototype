@@ -15,12 +15,13 @@ pozycje.
 | **Instruktaż** | ekran wspólny: treść zadania + timer rundy |
 | **Tablet gracza · Would You Press** | ekran w rękach gracza: punkty, 4 okrągłe przyciski do wciskania, panel żyć, feedback po odpowiedzi |
 | **Tablet gracza · quiz** | pytanie, 4 odpowiedzi 2×2 z animacją wciśnięcia, pasek czasu |
+| **Tablet gracza · kolejność** | konkurencja na ustawianie czterech odpowiedzi w kolejności: zapowiedź, odpowiadanie, ujawnianie wyniku |
 | **Ekran wyniku · Would You Press** | wynik gracza, imię i życia — w grze albo po odpadnięciu |
 | **Instruktaż · wyniki** | ekran wspólny po grze: tabela wyników i ekran podium, w trzech wariantach animacji |
 
 Można wysłać link prosto do jednego ekranu, dopisując `?view=` do adresu:
-`?view=instruktaz`, `?view=tablet`, `?view=quiz`, `?view=wynik`,
-`?view=wyniki`. Wybór zapamiętuje się w przeglądarce.
+`?view=instruktaz`, `?view=tablet`, `?view=quiz`, `?view=kolejnosc`,
+`?view=wynik`, `?view=wyniki`. Wybór zapamiętuje się w przeglądarce.
 
 ## Ekran: Instruktaż
 
@@ -337,6 +338,63 @@ Wcześniej były jeszcze dwie wersje z wciśnięciem **rozjaśniającym** (V1
 i V3 z ciemnymi jednolitymi przyciskami) — wypadły po wyborze kierunku,
 ale siedzą w historii gita (commit `d56814d`), więc da się je przywrócić.
 
+## Ekran: Tablet gracza · kolejność
+
+Konkurencja, w której gracz układa cztery odpowiedzi we właściwej
+kolejności (np. od najstarszego do najnowszego). Punkty są **wyłącznie
+za całą poprawną kolejność** — częściowo poprawna nie daje nic.
+
+Rząd to wąski **slot na numer** (256×382) i **kafelek odpowiedzi**
+(919,5×382). Kafelek się nie zmienia; wciśnięcie widać po tym, że
+w slocie pojawia się numer pozycji.
+
+### Przebieg pytania
+
+| Faza | Co się dzieje | Domyślny czas |
+| --- | --- | --- |
+| **zapowiedź** | tablet pokazuje „Przygotuj się", przyciski zablokowane | 3 s |
+| **odpowiadanie** | cztery odpowiedzi, pasek czasu, gracz klika w swojej kolejności | 18 s |
+| **ujawnianie** | sloty zapalają się po kolei, na końcu ramka OK / ERROR | 4 s |
+| **przerwa** | stan końcowy stoi, potem pytanie od nowa | 4 s |
+
+Scenariusz zaleca na odpowiadanie 15–20 s. Wszystkie czasy siedzą
+w `SEQ` w `app.js`, każdy jako osobna liczba.
+
+### Zasady odpowiadania
+
+Wszystkie są zaimplementowane i sprawdzone:
+
+- odpowiedź to cztery **różne** przyciski; ponowne wciśnięcie tego
+  samego nic nie zmienia,
+- **czwarte wciśnięcie wysyła** odpowiedź — nie da się cofnąć ani
+  poprawić,
+- wciśnięcia przed startem pytania (w zapowiedzi) się nie liczą,
+- niepełna sekwencja po upływie czasu to **brak odpowiedzi**: nawet
+  miejsca, które gracz zdążył trafić, zapalają się na czerwono.
+
+### Animacja ujawniania
+
+Sloty zapalają się **po kolei tak, jak leżą na ekranie** — czerwony,
+żółty, niebieski, zielony — co sekundę, a tekstowy feedback OK / ERROR
+wchodzi dopiero po ostatnim z nich (ta sama ramka co na Would You Press,
+tylko wyżej i w dwóch kolorach). Na czas ujawniania znika polecenie —
+tak jak na ekranach feedbacku w Figmie, gdzie go nie ma.
+
+**Slot świeci na zielono, jeśli ta odpowiedź stoi na swoim miejscu, a na
+czerwono, jeśli nie.** W Figmie są tylko dwa skrajne przypadki (wszystko
+zielone albo wszystko czerwone), więc stany mieszane są założeniem — bez
+nich ujawnianie kafelek po kafelku nie niosłoby żadnej informacji, bo
+pierwszy zapalony slot zdradzałby cały wynik. Gdyby feedback miał być
+„wszystko albo nic", wystarczy w `seqRowOk` zwracać wynik całej
+sekwencji.
+
+### Podgląd w pasku
+
+Przyciski **✓ dobra kolejność** i **✗ zła kolejność** wypełniają
+sekwencję i od razu puszczają ujawnianie, więc oba zakończenia widać bez
+rozgrywania pytania. **▶ od nowa** (albo `R`) startuje pytanie od
+zapowiedzi.
+
 ## Sterowanie (testowe)
 
 | Klawisz | Akcja |
@@ -347,6 +405,7 @@ ale siedzą w historii gita (commit `d56814d`), więc da się je przywrócić.
 | `1`–`5` | wersja timera (na instruktażu) |
 | `1`–`3` | wersja animacji wciśnięcia (w quizie) |
 | `1`–`3` | wersja animacji wyników (na ekranie wyników) |
+| `R` | na ekranie kolejności: pytanie od nowa (od zapowiedzi) |
 | `0`–`3` | skok wprost do stanu żyć (na tablecie i ekranie wyniku, bez animacji) |
 | `Z` | zła odpowiedź — jedno życie mniej, z animacją |
 
@@ -430,6 +489,17 @@ w `assets/`:
   <outer|inner>.svg`; pliki są większe od swoich pól o margines cienia
   (42 px górą i prawą, 62 px dołem i lewą), dlatego w CSS mają ujemne
   `left`/`top`. Tytułu „Wyniki" na tym ekranie nie ma.
+- **Tablet gracza · kolejność** — plik `UCzHnyMnTZ2AS0PnYsw6eR`, sekcja
+  `2417-53936`, sześć ekranów: zapowiedź (`2417-53978`), start rozgrywki
+  (`2417-53937`), wybrana kolejność (`2417-53958`), feedback OK
+  (`2417-53982`) i ERROR w dwóch stanach (`2417-54013` zapalony,
+  `2417-54044` niezapalony). Kadr ma pełne 2880×1800 (quiz ma 2869,75),
+  więc wszystko „na środku" stoi na x 1440. Siatka 2519×835 na (156, 747),
+  rzędy co 453, kolumny co 1319,5; w rzędzie slot 256 i kafelek 919,5
+  z odstępem 24. Polecenie 2400×384 na (240, 201,74) w Noto Sans Bold
+  90 px, numer w slocie 128 px, ramka komunikatu 427,436×207 na
+  (1226, 351,19). Zapowiedź korzysta z tej samej ramki i panelu co ekran
+  wyniku (2748×1686 na (66, 57), panel z paddingiem 64).
 - **Quiz, dodatkowe warianty przycisków** — **inny plik**:
   `feDfMhqinxZSqSzWsB7qFF` („Estigroup — Newsletter”), node `15-115`
   (ciemniejsze wciśnięte, twarz `darker`) i node `15-148` (jaśniejsze
@@ -438,6 +508,27 @@ w `assets/`:
 
 Animacje utraty życia i wciśnięcia odpowiedzi są autorskie — w Figmie ich
 nie ma, są tylko stany przed i po.
+
+### Kolejność — rozbieżności w designie
+
+Trzy rzeczy w sekcji `2417-53936` nie trzymają się razem; prototyp
+wybrał w każdej wariant większościowy, ale warto je potwierdzić:
+
+- **Siatka odpowiedzi stoi na dwóch różnych x.** Na ekranie „start
+  rozgrywki" na 190, na trzech pozostałych na 156. Prototyp ma 156
+  (większość); wyśrodkowana byłaby na 180,5, czyli nie pasuje do żadnego.
+- **Na ekranie feedback OK kafelki mają płaski obrys**, a na wszystkich
+  pozostałych (łącznie z ERROR) gradientowy. Prototyp zostaje przy
+  gradiencie — sprawdzone pomiarem na renderach.
+- **Obrys pustego slotu biegnie odwrotnie niż obrys kafelka**: jaśniejszy
+  koniec jest u dołu, a nie u góry. To wygląda na świadomą różnicę
+  wariantu komponentu i tak zostało zrobione.
+
+Eksport Dev Mode w tym pliku podaje z każdego gradientowego obrysu sam
+pierwszy kolor i gubi minus przy ujemnych stopach, więc kąty i stopy
+obrysów slotów są **dopasowane liczbowo do renderów z Figmy** (średni
+błąd 6–8 na 255). Kontrolę dopasowania przeszedł obrys kafelka, dla
+którego prawidłowa wartość była znana z quizu.
 
 ### Quiz — na co uważać przy kolejnych designach
 

@@ -641,7 +641,8 @@ body {
   .wyp-feedback.shown,
   .wyp-plate.shown,
   .wyp-plate.shown .wyp-plate-text,
-  .qa-round.shake {
+  .qa-round.shake,
+  .seq-tile.tap {
     animation-duration: 1ms !important;
   }
 
@@ -1200,7 +1201,9 @@ body {
    ciemnym tle — bez tego litery wychodzą wyraźnie grubsze niż w Figmie
    (sprawdzone nakładką różnicową z renderem Figmy). */
 .quiz-points,
-.quiz-question {
+.quiz-question,
+.seq-points,
+.seq-prompt {
   position: absolute;
   left: 1435px;
   transform: translate(-50%, -50%);
@@ -1526,8 +1529,10 @@ body {
 .wyp-corner.bl { left: 0; top: 116px; transform: scaleY(-1); }
 .wyp-corner.br { left: 334.436px; top: 116px; transform: scale(-1, -1); }
 
-/* „ERROR”: Noto Sans Bold 90 px, tracking 5 %, red/500, z ciemnym
-   obrysem 4 px na zewnątrz liter (stąd podwójna grubość i paint-order) */
+/* „ERROR” / „OK”: Noto Sans Bold 90 px, tracking 5 %, z ciemnym obrysem
+   4 px na zewnątrz liter (stąd podwójna grubość i paint-order). Kolor
+   idzie zmienną, bo ta sama ramka obsługuje też zielone „OK”
+   w konkurencji „kolejność” (node 2417-54004). */
 .wyp-plate-text {
   position: absolute;
   left: 0;
@@ -1540,12 +1545,25 @@ body {
   line-height: 1.5;
   letter-spacing: 4.5px;
   text-indent: 4.5px; /* tracking dokłada odstęp po ostatniej literze */
-  color: #e01717;
+  color: var(--plate-ink, #e01717); /* red/500 */
   text-align: center;
-  -webkit-text-stroke: 8px rgba(42, 22, 2, 0.5);
+  -webkit-text-stroke-width: var(--plate-stroke, 8px);
+  -webkit-text-stroke-color: rgba(42, 22, 2, 0.5);
   paint-order: stroke fill;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Zielony wariant ramki — dobra odpowiedź w konkurencji „kolejność” */
+.wyp-plate.ok {
+  --plate-ink: #0bf80b; /* green/500 */
+}
+
+/* W konkurencji „kolejność” litery leżą wprost na tabliczce, bez
+   ciemnego obrysu, który ma ramka na Would You Press — sprawdzone na
+   renderze: tło tuż przy literze jest tam takie samo jak dalej. */
+.wyp-plate.seq-plate {
+  --plate-stroke: 0;
 }
 
 .wyp-plate.shown {
@@ -1609,4 +1627,171 @@ body {
   );
   background-origin: border-box;
   box-shadow: 0 12px 24px 12px #051a1f;
+}
+
+/* ============================================================
+   TABLET GRACZA · KOLEJNOŚĆ
+   Figma: plik UCzHnyMnTZ2AS0PnYsw6eR, sekcja 2417-53936.
+   Ta klatka ma pełne 2880 px (quiz ma 2869,75), więc wszystko „na środku”
+   stoi na x 1440, a nie 1435. Slot na numer i kafelek odpowiedzi to ten
+   sam komponent co odpowiedzi w quizie — poniżej są wyłącznie różnice.
+   ============================================================ */
+.seq-points,
+.seq-prompt,
+.seq-timer {
+  left: 1440px;
+}
+
+.seq-points {
+  top: 91px;
+  font-size: 72px;
+  white-space: nowrap;
+}
+
+/* Pole polecenia 2400×384 ze środkiem na y 393,74. W odróżnieniu od
+   pytania w quizie polecenie jest w Bold. Na czas feedbacku znika —
+   ramka OK / ERROR wchodzi w to samo miejsce. */
+.seq-prompt {
+  transition: opacity 320ms ease;
+  top: 393.74px;
+  width: 2400px;
+  height: 384px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 90px;
+  font-weight: 700;
+}
+
+/* Siatka (Frame 182, 2519×835 na (156, 747)): dwa rzędy po dwie pary
+   slot + kafelek, 120 px odstępu w poziomie i 71 px w pionie.
+   Uwaga: na ekranie „start rozgrywki” ta sama siatka stoi w Figmie
+   na x 190 — tu jest 156, bo tak ma pozostałe trzy ekrany. */
+.seq-prompt.gone {
+  opacity: 0;
+}
+
+.seq-grid {
+  position: absolute;
+  left: 156px;
+  top: 747px;
+  display: grid;
+  grid-template-columns: repeat(2, 1199.5px);
+  gap: 71px 120px;
+}
+
+.seq-row {
+  display: flex;
+  gap: 24px;
+}
+
+/* Klikalny jest tylko kafelek — slot jest polem wyniku, nie przyciskiem */
+.qa.seq-slot {
+  width: 256px;
+  cursor: default;
+}
+
+.qa.seq-tile {
+  width: 919.5px;
+}
+
+/* Pusty slot: skorupa ma tylko pierwszy cień, a rdzeń sam pierścień —
+   bez dolnego rzucanego cienia, który mają kafelki odpowiedzi */
+.seq-slot .qa-shell {
+  box-shadow: -5px 6px 42px 2px rgba(5, 19, 22, 0.6);
+}
+
+.seq-slot .qa-core {
+  box-shadow: 0 0 0 6px #030512;
+}
+
+/* Numer pozycji w sekwencji gracza: ten sam tekst co w odpowiedzi,
+   tylko 128 px (node 2417-53964) */
+.seq-number {
+  font-size: 128px;
+  letter-spacing: 1.28px;
+}
+
+/* Zapalony slot = wariant „feedback” komponentu QUIZ/button
+   (node 2417-53993 zielony, 2417-54024 czerwony): skorupa dostaje
+   ciaśniejszy cień i padding 15 zamiast 16 (czyli 9 zamiast 10 po
+   odjęciu obrysu rdzenia), a rdzeń świeci na swój kolor. Skorupa, rdzeń
+   i twarz przenikają razem, więc zapalenie jest jednym ruchem. */
+.seq-lit {
+  background: var(--qa-fill-lit) padding-box, var(--qa-stroke-lit) border-box;
+  opacity: 0;
+  transition: opacity var(--seq-reveal);
+}
+
+.seq-slot {
+  --seq-reveal: 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.seq-slot .qa-shell,
+.seq-slot .qa-core {
+  transition: padding var(--seq-reveal), background-image var(--seq-reveal),
+    box-shadow var(--seq-reveal);
+}
+
+.seq-slot.lit .seq-lit {
+  opacity: 1;
+}
+
+.seq-slot.lit .qa-shell {
+  padding: 9px;
+  background-image: linear-gradient(25.339deg, rgba(3, 28, 27, 0.32) 31.869%, rgba(8, 70, 66, 0.32) 82.986%);
+  box-shadow: -5px 6px 4px 0 #061015, -10px 10px 52px 0 #051114;
+}
+
+.seq-slot.lit .qa-core {
+  backdrop-filter: blur(7.5px);
+  box-shadow: var(--qa-glow-lit);
+}
+
+/* Wciśnięcie kafelka. W Figmie są tylko stany przed i po — kafelek po
+   wciśnięciu wygląda tak samo, bo odpowiedź widać po numerze w slocie.
+   Bez żadnego ruchu nie widać jednak, że wciśnięcie weszło, więc kafelek
+   dostaje krótkie kliknięcie tym samym czasem co w quizie. */
+.seq-tile.tap {
+  animation: seq-tap var(--qa-press);
+}
+
+@keyframes seq-tap {
+  50% { transform: scale(0.98); }
+}
+
+/* Zapowiedź (node 2417-53978): przez pierwsze sekundy pytania tablet
+   pokazuje sam komunikat na czarnym tle — ta sama ramka i panel co na
+   ekranie wyniku, więc korzysta z klas `.score-*`. */
+.seq-announce {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 320ms ease;
+}
+
+.seq-announce.shown {
+  opacity: 1;
+}
+
+.seq-announce-frame {
+  left: 66px;
+  top: 57px;
+  width: 2748px;
+  height: 1686px;
+}
+
+.seq-announce-text {
+  font-family: "Noto Sans", system-ui, sans-serif;
+  font-weight: 700;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 128px;
+  line-height: 1.5;
+  color: var(--text);
+  text-align: center;
+  white-space: nowrap;
+  user-select: none;
 }

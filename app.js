@@ -601,12 +601,93 @@ const QUIZ_VERSIONS = [
 const DEFAULT_QUIZ_VERSION = "v1.2";
 
 /* ============================================================
+   WIDOK: TABLET GRACZA · KOLEJNOŚĆ
+   Konkurencja, w której gracz układa cztery odpowiedzi we właściwej
+   kolejności. Figma: plik UCzHnyMnTZ2AS0PnYsw6eR, sekcja 2417-53936 —
+   sześć ekranów: zapowiedź („Przygotuj się”, node 2417-53978), start
+   rozgrywki (2417-53937), wybrana kolejność (2417-53958) oraz feedback
+   OK (2417-53982) i ERROR (2417-54013 zapalony, 2417-54044 niezapalony).
+
+   Rząd to wąski slot 256×382 na numer plus kafelek odpowiedzi 919,5×382
+   — w Figmie oba to ten sam komponent `Quiz/button-types` co odpowiedzi
+   w quizie, więc korzystają z klas `.qa*` i z twarzy z QUIZ_ANSWERS.
+   ============================================================ */
+const SEQ_BG = QUIZ_BG; // ten sam kadr tła co w quizie
+
+const SEQ = {
+  prompt: "Ułóż wynalazki od najstarszego do najnowszego",
+  announceMs: 3000,   // zapowiedź: „Przygotuj się”, przyciski zablokowane
+  answerMs: 18000,    // czas na odpowiedź (scenariusz zaleca 15–20 s)
+  revealStepMs: 1000, // odstęp między zapaleniem kolejnych slotów
+  plateDelayMs: 1000, // po ostatnim slocie wchodzi ramka OK / ERROR
+  breakMs: 4000,      // przerwa po feedbacku, potem pytanie od nowa
+};
+
+/* Odpowiedzi w kolejności siatki: górny rząd L→P, dolny rząd L→P.
+   `place` = miejsce tej odpowiedzi w poprawnej kolejności (1–4); tu
+   poprawna sekwencja to niebieski → czerwony → zielony → żółty, czyli
+   celowo inna niż kolejność na ekranie.
+   Twarz kafelka bierzemy z QUIZ_ANSWERS (`lightGradient`) — w Figmie to
+   ten sam wariant komponentu, więc gradienty nie są tu dublowane; różni
+   się tylko kąt, bo pudełko jest węższe niż w quizie (poniżej progu
+   widoczności). `slotFill` to płaskie wypełnienie pustego slotu, wzięte
+   z ciemnego końca rampy danego koloru. */
+
+/* Obrys pustego slotu biegnie odwrotnie niż obrys kafelka: jasny koniec
+   jest u dołu, nie u góry. Dev Mode podaje tu (jak zwykle w tym pliku)
+   sam pierwszy kolor, więc kąt i stopy są dopasowane do renderu z Figmy —
+   dla wszystkich czterech slotów te same, bo pudełko jest identyczne. */
+const seqSlotStroke = (jasny, ciemny) =>
+  `linear-gradient(324.45deg, ${jasny} -14.3%, ${ciemny} 92.6%)`;
+const SEQ_ANSWERS = [
+  { id: "red",    text: "Druk",             place: 2, slotFill: "#230606", slotStroke: seqSlotStroke("#b11719", "#210405") }, // red/950, red/600 → ciemny
+  { id: "yellow", text: "Internet",         place: 4, slotFill: "#1a1804", slotStroke: seqSlotStroke("#ceb935", "#1a1804") }, // yellow/900, yellow/500 → yellow/900
+  { id: "blue",   text: "Koło garncarskie", place: 1, slotFill: "#060c23", slotStroke: seqSlotStroke("#1e57e6", "#060c23") }, // dark-blue/800, dark-blue/500 → dark-blue/800
+  { id: "green",  text: "Żarówka",          place: 3, slotFill: "#0d2805", slotStroke: seqSlotStroke("#0fcd4e", "#042108") }, // green/900, green/500 → ciemny
+];
+
+/* Zapalony slot = wariant „feedback” komponentu QUIZ/button: skorupa ma
+   ciaśniejszy cień i padding 15 zamiast 16 (rdzeń jest o 2 px większy),
+   a rdzeń świeci na swój kolor. Figma: node 2417-53993 (zielony)
+   i 2417-54024 (czerwony). Obrysy są gradientami z ujemnym pierwszym
+   stopem — Dev Mode podaje z nich sam pierwszy kolor i gubi minus, więc
+   kąty i stopy są dopasowane do renderów z Figmy. */
+const SEQ_LIT = {
+  ok: {
+    fill: "linear-gradient(7.342deg, #19980e 15.158%, #0bf80b 213.59%)", // green/700 → green/500
+    stroke: "linear-gradient(174.16deg, #0bf80b -27.91%, #0d2805 60.31%)", // green/500 → green/900
+    glow: "0 12px 52px 6px rgba(13, 40, 5, 0.66), 0 0 42px 23px rgba(18, 40, 5, 0.73), -2px 2px 32px 6px #030c12",
+  },
+  bad: {
+    fill: "linear-gradient(4.837deg, #8f1616 11.111%, #e01717 217.11%)", // red/700 → red/500
+    stroke: "linear-gradient(172.64deg, #e01717 -27.96%, #230606 55.8%)", // red/500 → red/950
+    glow: "0 12px 52px 6px rgba(143, 22, 22, 0.6), 0 0 42px 23px rgba(60, 7, 7, 0.62), -2px 2px 32px 6px #030c12",
+  },
+};
+
+/* Ramka komunikatu — ten sam kształt co ERROR na Would You Press
+   (427,436×207, tabliczka 406×182, cztery narożniki 93×91), tylko wyżej
+   i w dwóch kolorach. Zielone pliki to node 2417-54004. */
+const SEQ_PLATE = { x: 1226, y: 351.1875, w: 427.436, h: 207 };
+const SEQ_PLATES = {
+  ok:  { text: "OK",    plateAsset: "assets/ok-plate.svg",    cornerAsset: "assets/ok-corner.svg" },
+  bad: { text: "ERROR", plateAsset: "assets/error-plate.svg", cornerAsset: "assets/error-corner.svg" },
+};
+
+/* Siatka 2×2 rzędów (Frame 182, 2519×835 na (156, 747)); rząd to slot
+   plus kafelek z odstępem 24. Uwaga: na ekranie „start rozgrywki” ta sama
+   siatka stoi w Figmie na x 190, a na trzech pozostałych na 156 — bierzemy
+   156, bo tak ma większość ekranów. */
+const SEQ_GRID = { x: 156, y: 747, colGap: 120, rowGap: 71, slotW: 256, tileW: 919.5 };
+
+/* ============================================================
    WIDOKI (select w pasku nad sceną)
    ============================================================ */
 const VIEWS = [
   { id: "instruktaz", label: "Instruktaż",           build: buildInstruktaz },
   { id: "tablet",     label: "Tablet gracza · Would You Press", build: buildTablet },
   { id: "quiz",       label: "Tablet gracza · quiz", build: buildQuiz },
+  { id: "kolejnosc",  label: "Tablet gracza · kolejność", build: buildSekwencja },
   { id: "wynik",      label: "Ekran wyniku · Would You Press", build: buildScore },
   { id: "wyniki",     label: "Instruktaż · wyniki",  build: buildResults },
 ];
@@ -620,6 +701,7 @@ const HINTS = {
   instruktaz: "spacja — pauza · ←/→ — runda · R — restart",
   tablet: "kliknij przycisk · Z — tracisz życie · 0–3 — skok do stanu · R — restart",
   quiz: "kliknij odpowiedź · spacja — pauza · R — od nowa · 1–3 — wersja",
+  kolejnosc: "klikaj odpowiedzi w swojej kolejności · spacja — pauza · R — od nowa",
   wynik: "Z — tracisz życie · 0–3 — skok do stanu · R — pełne życia",
   wyniki: "R — odtwórz animację od nowa · 1–3 — wersja",
 };
@@ -666,6 +748,7 @@ let litElements = []; // [{ el, threshold }]
 let lifeEls = []; // kryształy w panelu żyć, od lewej
 let answerEls = []; // okrągłe przyciski „Would You Press” (tablet gracza)
 let quizEls = null; // { grid, bar, answers } — tylko na widoku quizu
+let seqEls = null; // { rows, bar, plate, announce } — tylko na widoku kolejności
 let currentViewId = DEFAULT_VIEW;
 let currentVersionId = DEFAULT_VERSION;
 let currentAnimId = DEFAULT_ANIM;
@@ -1141,6 +1224,109 @@ function buildQuiz(root) {
 }
 
 /* ============================================================
+   KONKURENCJA „KOLEJNOŚĆ”
+   ============================================================ */
+
+/* Jeden rząd: slot na numer + kafelek odpowiedzi. Oba to ten sam
+   komponent co odpowiedzi w quizie, więc dzielą klasy `.qa*`; różnią się
+   szerokością i tym, że klikalny jest tylko kafelek — slot jest polem
+   wyniku, nie przyciskiem. */
+function makeSeqRow(cfg) {
+  const face = QUIZ_ANSWERS.find((a) => a.id === cfg.id).lightGradient;
+  const ring = QUIZ_ANSWERS.find((a) => a.id === cfg.id).ring;
+
+  const row = document.createElement("div");
+  row.className = "seq-row";
+
+  const slot = document.createElement("div");
+  slot.className = "qa seq-slot";
+  slot.dataset.answer = cfg.id;
+  slot.style.setProperty("--qa-fill", asImage(cfg.slotFill));
+  slot.style.setProperty("--qa-stroke", asImage(cfg.slotStroke));
+  slot.innerHTML =
+    `<span class="qa-shell"><span class="qa-core ring">` +
+    `<span class="qa-face"></span><span class="qa-face seq-lit"></span>` +
+    `<span class="qa-text seq-number"></span></span></span>`;
+
+  const tile = document.createElement("button");
+  tile.type = "button";
+  tile.className = "qa seq-tile";
+  tile.dataset.answer = cfg.id;
+  tile.style.setProperty("--qa-fill", asImage(face.fill));
+  tile.style.setProperty("--qa-stroke", asImage(face.stroke));
+  tile.innerHTML =
+    `<span class="qa-shell"><span class="qa-core${ring ? " ring" : ""}">` +
+    `<span class="qa-face"></span><span class="qa-text"></span></span></span>`;
+  tile.querySelector(".qa-text").textContent = cfg.text;
+
+  /* Wybór na dotknięcie, jak w quizie — liczy się moment reakcji */
+  tile.addEventListener("pointerdown", (e) => {
+    if (e.button === 0) pressSeq(cfg.id);
+  });
+  tile.addEventListener("mousedown", (e) => e.preventDefault());
+  tile.addEventListener("click", (e) => {
+    if (e.detail === 0) pressSeq(cfg.id);
+  });
+
+  row.append(slot, tile);
+  return { row, slot, tile, number: slot.querySelector(".seq-number"), cfg };
+}
+
+/* --- Widok kolejności: tło + punkty + polecenie + siatka + pasek czasu,
+       a nad tym ramka OK/ERROR i przesłona zapowiedzi. --- */
+function buildSekwencja(root) {
+  root.appendChild(makeBg(SEQ_BG));
+
+  const points = document.createElement("div");
+  points.className = "seq-points";
+  points.textContent = POINTS.value;
+  root.appendChild(points);
+
+  const prompt = document.createElement("div");
+  prompt.className = "seq-prompt";
+  prompt.textContent = SEQ.prompt;
+  root.appendChild(prompt);
+
+  const grid = document.createElement("div");
+  grid.className = "seq-grid";
+  const rows = SEQ_ANSWERS.map((cfg) => {
+    const row = makeSeqRow(cfg);
+    grid.appendChild(row.row);
+    return row;
+  });
+  root.appendChild(grid);
+
+  const timer = document.createElement("div");
+  timer.className = "quiz-timer seq-timer";
+  const bar = document.createElement("div");
+  bar.className = "quiz-timer-fill";
+  timer.appendChild(bar);
+  root.appendChild(timer);
+
+  const plate = document.createElement("div");
+  plate.className = "wyp-plate seq-plate";
+  plate.style.left = SEQ_PLATE.x + "px";
+  plate.style.top = SEQ_PLATE.y + "px";
+  plate.style.width = SEQ_PLATE.w + "px";
+  plate.style.height = SEQ_PLATE.h + "px";
+  root.appendChild(plate);
+
+  /* Zapowiedź zasłania cały ekran — w Figmie to osobna klatka na czarnym
+     tle (node 2417-53978), z tą samą ramką i panelem co ekran wyniku. */
+  const announce = document.createElement("div");
+  announce.className = "seq-announce";
+  announce.innerHTML =
+    `<div class="score-frame seq-announce-frame">` +
+    `<div class="score-panel"><span class="seq-announce-text">Przygotuj się</span></div></div>`;
+  root.appendChild(announce);
+
+  seqEls = { rows, bar, plate, announce, prompt };
+
+  applyTheme(THEMES[0]);
+  startSeqQuestion();
+}
+
+/* ============================================================
    WYNIKI — tabela z animacją odsłaniania podium
    ============================================================ */
 
@@ -1404,6 +1590,7 @@ function mountView(id) {
   feedbackEl = null;
   plateEl = null;
   quizEls = null;
+  seqEls = null;
   clearResultsTimers();
   resultEls = [];
   podiumEl = null;
@@ -1568,6 +1755,20 @@ function buildTopbar() {
   });
   document.getElementById("results-replay").addEventListener("click", playResults);
 
+  const seqAuto = document.getElementById("seq-auto-switch");
+  [
+    { id: "ok", label: "✓ dobra kolejność", title: "Wypełnij sekwencję poprawnie i pokaż wynik" },
+    { id: "bad", label: "✗ zła kolejność", title: "Wypełnij sekwencję błędnie i pokaż wynik" },
+  ].forEach((o) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = o.label;
+    btn.title = o.title;
+    btn.addEventListener("click", () => autoSeq(o.id === "ok"));
+    seqAuto.appendChild(btn);
+  });
+  document.getElementById("seq-replay").addEventListener("click", startSeqQuestion);
+
   const colors = document.getElementById("timer-color-switch");
   TIMER_COLORS.forEach((c) => {
     const btn = document.createElement("button");
@@ -1704,6 +1905,17 @@ const quiz = {
   selected: null, // id wybranej odpowiedzi albo null
 };
 
+/* Konkurencja „kolejność” — własny zegar faz, pauza wspólna z resztą.
+   `picks` to kolejność wciśnięć gracza (id odpowiedzi), więc jej długość
+   jest zarazem numerem następnej pozycji. */
+const seq = {
+  phase: "announce", // "announce" | "running" | "reveal" | "break"
+  phaseStart: 0,
+  elapsedInPhase: 0,
+  frozenAt: 0,
+  picks: [],
+};
+
 /* --- Życia ---
    setLives  = skok wprost do stanu (przyciski w pasku) — bez animacji,
    loseLife  = utrata jednego życia z animacją wybranego wariantu. --- */
@@ -1823,6 +2035,177 @@ function setQuizProgress(progress) {
   quizEls.bar.style.visibility = progress >= 1 ? "hidden" : "";
 }
 
+/* --- Konkurencja „kolejność” --- */
+
+/* Pytanie od zera: zapowiedź, puste sloty, pełny pasek czasu. */
+function startSeqQuestion() {
+  seq.phase = "announce";
+  seq.phaseStart = performance.now();
+  seq.elapsedInPhase = 0;
+  seq.frozenAt = 0;
+  seq.picks = [];
+  seq.lit = 0;
+  seq.plateShown = false;
+  if (!seqEls) return;
+
+  seqEls.rows.forEach(({ slot, number }) => {
+    number.textContent = "";
+    slot.classList.remove("lit");
+    slot.style.removeProperty("--qa-fill-lit");
+    slot.style.removeProperty("--qa-stroke-lit");
+    slot.style.removeProperty("--qa-glow-lit");
+  });
+  seqEls.plate.classList.remove("shown");
+  seqEls.plate.innerHTML = "";
+  seqEls.prompt.classList.remove("gone");
+  seqEls.announce.classList.add("shown");
+  setSeqProgress(0);
+  setSeqLocked(true);
+}
+
+/* Wciśnięcie odpowiedzi. Zasady ze scenariusza: liczy się dopiero po
+   starcie, ten sam przycisk drugi raz nic nie zmienia, a czwarte
+   wciśnięcie wysyła odpowiedź — cofnąć się nie da. */
+function pressSeq(id) {
+  if (!seqEls || seq.phase !== "running" || state.paused) return;
+  if (seq.picks.includes(id)) return;
+
+  seq.picks.push(id);
+  const row = seqEls.rows.find((r) => r.cfg.id === id);
+  row.number.textContent = String(seq.picks.length);
+  /* Krótkie „kliknięcie” kafelka — w Figmie są tylko stany przed i po,
+     ale bez żadnego ruchu nie widać, że wciśnięcie weszło. */
+  row.tile.classList.remove("tap");
+  void row.tile.offsetWidth;
+  row.tile.classList.add("tap");
+
+  if (seq.picks.length === SEQ_ANSWERS.length) startSeqReveal();
+}
+
+/* Przejście do ujawniania wyniku — po czwartym wciśnięciu albo po czasie.
+   Niepełna odpowiedź to zgodnie ze scenariuszem brak odpowiedzi, więc
+   wchodzi tak samo, tylko bez kompletu numerów. */
+function startSeqReveal() {
+  /* Ekrany feedbacku w Figmie nie mają już polecenia — pytanie jest
+     rozstrzygnięte, a ramka OK / ERROR wchodzi dokładnie w jego miejsce. */
+  if (seqEls) seqEls.prompt.classList.add("gone");
+  seq.phase = "reveal";
+  seq.phaseStart = performance.now();
+  seq.elapsedInPhase = 0;
+  seq.frozenAt = 0;
+  seq.lit = 0;
+  seq.plateShown = false;
+  setSeqLocked(true);
+}
+
+/* Czy dana odpowiedź stoi na swoim miejscu. Niepełna sekwencja to
+   zgodnie ze scenariuszem brak odpowiedzi, więc nic w niej nie jest
+   poprawne — także miejsca, które gracz zdążył trafić. */
+function seqRowOk(cfg) {
+  if (seq.picks.length < SEQ_ANSWERS.length) return false;
+  return seq.picks.indexOf(cfg.id) + 1 === cfg.place;
+}
+
+/* Zapalenie jednego slotu — podmiana twarzy na świecącą i przejście
+   skorupy w wariant feedbacku (ciaśniejszy cień, rdzeń o 2 px większy). */
+function litSeqSlot(index) {
+  const { slot, cfg } = seqEls.rows[index];
+  const lit = SEQ_LIT[seqRowOk(cfg) ? "ok" : "bad"];
+  slot.style.setProperty("--qa-fill-lit", asImage(lit.fill));
+  slot.style.setProperty("--qa-stroke-lit", asImage(lit.stroke));
+  slot.style.setProperty("--qa-glow-lit", lit.glow);
+  slot.classList.add("lit");
+}
+
+/* Ramka OK / ERROR — ten sam kształt co na Would You Press, tylko wyżej
+   i w dwóch kolorach. Punkty są wyłącznie za całą poprawną kolejność. */
+function showSeqPlate() {
+  const ok = SEQ_ANSWERS.every(seqRowOk);
+  const cfg = SEQ_PLATES[ok ? "ok" : "bad"];
+  const plate = seqEls.plate;
+  plate.classList.toggle("ok", ok);
+  plate.innerHTML =
+    `<img class="wyp-plate-bg" src="${cfg.plateAsset}" alt="">` +
+    ["tl", "tr", "bl", "br"]
+      .map((rog) => `<span class="wyp-corner ${rog}"><img src="${cfg.cornerAsset}" alt=""></span>`)
+      .join("") +
+    `<span class="wyp-plate-text"></span>`;
+  plate.querySelector(".wyp-plate-text").textContent = cfg.text;
+  void plate.offsetWidth;
+  plate.classList.add("shown");
+}
+
+/* Podgląd obu zakończeń bez rozgrywania pytania (przyciski w pasku):
+   wypełnia sekwencję poprawną albo przestawioną kolejnością i od razu
+   ujawnia wynik. Przestawienie zamienia sąsiednie pary, więc każda
+   odpowiedź jest nie na swoim miejscu — wszystkie sloty czerwone, tak
+   jak na ekranie z Figmy. */
+function autoSeq(ok) {
+  if (!seqEls) return;
+  startSeqQuestion();
+  seqEls.announce.classList.remove("shown");
+
+  const byPlace = [...SEQ_ANSWERS].sort((a, b) => a.place - b.place);
+  const order = ok ? byPlace : [byPlace[1], byPlace[0], byPlace[3], byPlace[2]];
+  order.forEach((cfg, i) => {
+    seq.picks.push(cfg.id);
+    seqEls.rows.find((r) => r.cfg.id === cfg.id).number.textContent = String(i + 1);
+  });
+  startSeqReveal();
+}
+
+function setSeqLocked(locked) {
+  if (!seqEls) return;
+  seqEls.rows.forEach(({ tile }) => {
+    tile.disabled = locked;
+  });
+}
+
+function setSeqProgress(progress) {
+  if (!seqEls) return;
+  seqEls.bar.style.width = (1 - progress) * 100 + "%";
+  seqEls.bar.style.visibility = progress >= 1 ? "hidden" : "";
+}
+
+/* Przebieg pytania. Zapowiedź (przyciski zablokowane) → odpowiadanie
+   z paskiem czasu → ujawnianie wyniku slot po slocie, a na końcu ramka
+   → przerwa i kolejne pytanie. Wszystkie czasy siedzą w SEQ. */
+function tickSekwencja(now) {
+  const elapsed = phaseElapsed(seq, now);
+  if (elapsed === null || !seqEls) return;
+
+  if (seq.phase === "announce") {
+    if (elapsed >= SEQ.announceMs) {
+      seqEls.announce.classList.remove("shown");
+      setSeqLocked(false);
+      seq.phase = "running";
+      seq.phaseStart = now;
+      seq.elapsedInPhase = 0;
+    }
+  } else if (seq.phase === "running") {
+    const progress = Math.min(elapsed / SEQ.answerMs, 1);
+    setSeqProgress(progress);
+    if (progress >= 1) startSeqReveal(); // czas minął = niepełna odpowiedź
+  } else if (seq.phase === "reveal") {
+    /* Sloty zapalają się po kolei tak, jak leżą na ekranie (czerwony,
+       żółty, niebieski, zielony), a tekstowy feedback dochodzi dopiero
+       po ostatnim z nich. */
+    const due = Math.min(Math.floor(elapsed / SEQ.revealStepMs) + 1, seqEls.rows.length);
+    while (seq.lit < due) litSeqSlot(seq.lit++);
+
+    const plateAt = (seqEls.rows.length - 1) * SEQ.revealStepMs + SEQ.plateDelayMs;
+    if (!seq.plateShown && elapsed >= plateAt) {
+      showSeqPlate();
+      seq.plateShown = true;
+      seq.phase = "break";
+      seq.phaseStart = now;
+      seq.elapsedInPhase = 0;
+    }
+  } else if (elapsed >= SEQ.breakMs) {
+    startSeqQuestion();
+  }
+}
+
 /* Zegar fazy z obsługą pauzy: wejście w postój domyka licznik fazy,
    wyjście przesuwa start, więc czas postoju nie wlicza się do fazy.
    Zwraca czas od startu fazy albo null, gdy stoimy. */
@@ -1884,6 +2267,7 @@ function tick(now) {
      nie odlicza czasu */
   if (currentViewId === "instruktaz") tickInstruktaz(now);
   else if (currentViewId === "quiz") tickQuiz(now);
+  else if (currentViewId === "kolejnosc") tickSekwencja(now);
 
   requestAnimationFrame(tick);
 }
@@ -1916,6 +2300,7 @@ window.addEventListener("keydown", (e) => {
       clearPressedAnswer();
       startRound(0);
       if (currentViewId === "quiz") startQuestion();
+      if (currentViewId === "kolejnosc") startSeqQuestion();
       if (currentViewId === "wyniki") playResults();
       break;
     /* Cyfry: na instruktażu wersja timera (1–5), tam gdzie są życia liczba
