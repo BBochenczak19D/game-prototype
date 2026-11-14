@@ -477,10 +477,36 @@ const SCORE = {
 const QUIZ_BG = { src: "assets/bg-quiz.png", w: 101.04, h: 101.05, top: 0 };
 
 const QUIZ = {
-  question: "Co to jest? Ma klawisze, ale nie otwiera zamków?",
+  question: "Największa pustynia na świecie to wcale nie Sahara. Gdzie się znajduje?",
+  correct: "red",    // „Na Antarktydzie” — za nią lecą punkty
   durationMs: 10000, // czas na odpowiedź = pełny pasek na dole
   endHoldMs: 1500,   // po końcu czasu tyle stoi stan końcowy, potem pytanie od nowa
 };
+
+/* ============================================================
+   PANEL PUNKTÓW (ekran quizu)
+   Figma: plik UCzHnyMnTZ2AS0PnYsw6eR, node 2492-36948 — kontener
+   z punktami (2492-36959) i dwie linie po bokach (2492-36961/62).
+   Obie linie to ten sam kształt, więc jeden plik SVG odbijany lustrzanie.
+   Pliki są większe od swoich pól o margines cienia i obrysu, dlatego mają
+   ujemne `imgX` / `imgY`.
+   ============================================================ */
+const QUIZ_SCORE = {
+  start: 300,  // stan wyjściowy licznika
+  gain: 500,   // ile dodaje poprawna odpowiedź
+  box:  { x: 1177, y: 26, w: 526.5, h: 195.5,
+          src: "assets/points-box.svg", imgX: -44, imgY: -54, imgW: 614.5, imgH: 305.5 },
+  line: { y: 34, w: 538, h: 201, leftX: 694,
+          src: "assets/points-line.svg", imgX: -2.6665, imgY: -2.6665, imgW: 543.333, imgH: 206.333 },
+  text: { x: 1286, y: 38, w: 307, h: 150 },
+};
+
+/* Wersje animacji dodania punktów (przełącznik w pasku) */
+const QUIZ_POINT_ANIMS = [
+  { id: "v1", label: "V1 · gradient na zewnątrz",
+    title: "Jasny punkt gradientu przebiega raz od kontenera na zewnątrz, a pod punktami zapala się poświata" },
+];
+const DEFAULT_QUIZ_POINT_ANIM = "v1";
 
 /* Odpowiedzi w kolejności siatki: górny rząd L→P, dolny rząd L→P.
    Każdy kolor ma pięć twarzy, od najjaśniejszej do najciemniejszej:
@@ -504,7 +530,7 @@ const QUIZ = {
    twarzach, tak samo jak w okrągłych przyciskach (czerwony i zielony). */
 const QUIZ_ANSWERS = [
   {
-    id: "red", text: "Odpowiedź", ring: true,
+    id: "red", text: "Na Antarktydzie", ring: true,
     light: { fill: "#b11719", stroke: "#f64949" }, // red/600, red/400
     lightGradient: {
       fill: "linear-gradient(3.371deg, #8f1616 -17.57%, #230606 158.65%)", // red/700 → red/950
@@ -524,7 +550,7 @@ const QUIZ_ANSWERS = [
     },
   },
   {
-    id: "yellow", text: "Odpowiedź", ring: false,
+    id: "yellow", text: "W Mongolii", ring: false,
     light: { fill: "#a89311", stroke: "#f6e472" }, // yellow/600, yellow/400
     lightGradient: {
       fill: "linear-gradient(180deg, #1a1804 -92.71%, #76670c 100%)", // yellow/900 → yellow/700
@@ -544,7 +570,7 @@ const QUIZ_ANSWERS = [
     },
   },
   {
-    id: "blue", text: "Odpowiedź", ring: false,
+    id: "blue", text: "W Chile", ring: false,
     light: { fill: "#1e57e6", stroke: "#4d80ff" }, // dark-blue/500, dark-blue/400
     lightGradient: {
       fill: "linear-gradient(0.231deg, #113aa2 -9.25%, #060c23 189.65%)", // dark-blue/600 → dark-blue/800
@@ -565,7 +591,7 @@ const QUIZ_ANSWERS = [
     },
   },
   {
-    id: "green", text: "Odpowiedź", ring: true,
+    id: "green", text: "Na Półwyspie Arabskim", ring: true,
     light: { fill: "#19980e", stroke: "#53f653" }, // green/700, green/400
     lightGradient: {
       fill: "linear-gradient(180.099deg, #0d2805 -97.61%, #19980e 132.69%)", // green/900 → green/700
@@ -718,7 +744,7 @@ const LIVES_VIEWS = ["tablet", "wynik"];
 const HINTS = {
   instruktaz: "spacja — pauza · ←/→ — runda · R — restart",
   tablet: "kliknij przycisk · Z — tracisz życie · 0–3 — skok do stanu · R — restart",
-  quiz: "kliknij odpowiedź · spacja — pauza · R — od nowa · 1–3 — wersja",
+  quiz: "kliknij odpowiedź · dobra odpowiedź dolicza punkty · spacja — pauza · R — od nowa · 1–3 — wersja",
   kolejnosc: "klikaj odpowiedzi w swojej kolejności · spacja — pauza · R — od nowa · 1–2 — wersja",
   wynik: "Z — tracisz życie · 0–3 — skok do stanu · R — pełne życia",
   wyniki: "R — odtwórz animację od nowa · 1–3 — wersja",
@@ -733,6 +759,7 @@ const RESULTS_STORAGE_KEY = "quizsteries-wyniki";
 const WYP_FEEDBACK_STORAGE_KEY = "quizsteries-wyp-feedback";
 const WYP_OUTCOME_STORAGE_KEY = "quizsteries-wyp-outcome";
 const SEQ_STORAGE_KEY = "quizsteries-kolejnosc";
+const QUIZ_POINTS_STORAGE_KEY = "quizsteries-quiz-punkty";
 
 /* ============================================================
    MOTYWY — 5 zestawów kolorów.
@@ -773,6 +800,7 @@ let currentVersionId = DEFAULT_VERSION;
 let currentAnimId = DEFAULT_ANIM;
 let currentQuizVersionId = DEFAULT_QUIZ_VERSION;
 let currentSeqVersionId = DEFAULT_SEQ_VERSION;
+let currentQuizPointAnimId = DEFAULT_QUIZ_POINT_ANIM;
 let currentTimerColorId = DEFAULT_TIMER_COLOR;
 let currentWypFeedbackId = DEFAULT_WYP_FEEDBACK;
 let currentWypOutcomeId = DEFAULT_WYP_OUTCOME;
@@ -1211,14 +1239,60 @@ function makeQuizAnswer(cfg, version) {
   return btn;
 }
 
+/* Panel punktów: kontener z licznikiem i dwie linie po bokach. Linie to
+   jeden kształt — prawa jest lustrzanym odbiciem lewej, dlatego dzielą
+   plik i tę samą animację (odbicie samo odwraca jej kierunek).
+   Każda linia ma dwie warstwy: spodnią (stan spoczynku prosto z Figmy)
+   i wierzchnią, po której przy dodaniu punktów przebiega jasny punkt
+   gradientu — wycina go ruchoma maska. */
+function makeQuizScore() {
+  const { box, line, text } = QUIZ_SCORE;
+  const el = document.createElement("div");
+  el.className = "quiz-score";
+  el.dataset.anim = currentQuizPointAnimId;
+
+  const poz = (c) => `left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px`;
+  const obraz = (c) =>
+    `style="left:${c.imgX}px;top:${c.imgY}px;width:${c.imgW}px;height:${c.imgH}px"`;
+
+  const linia = (strona, x) =>
+    `<span class="quiz-score-line ${strona}" style="${poz({ ...line, x })}">` +
+    `<img class="quiz-score-line-base" src="${line.src}" alt="" ${obraz(line)}>` +
+    `<span class="quiz-score-pulse"><img src="${line.src}" alt="" ${obraz(line)}></span>` +
+    `</span>`;
+
+  el.innerHTML =
+    linia("left", line.leftX) +
+    linia("right", SCENE.width - line.leftX - line.w) +
+    `<span class="quiz-score-box" style="${poz(box)}">` +
+    `<img src="${box.src}" alt="" ${obraz(box)}></span>` +
+    `<span class="quiz-score-value" style="${poz(text)}"></span>`;
+
+  const value = el.querySelector(".quiz-score-value");
+  value.textContent = String(QUIZ_SCORE.start);
+  return { el, value, points: QUIZ_SCORE.start };
+}
+
+/* Dodanie punktów: licznik skacze na nową wartość, a klasa odpala obie
+   animacje naraz — przebieg gradientu po liniach i poświatę pod
+   kontenerem. Klasa schodzi i wraca po przeliczeniu układu, żeby kolejna
+   poprawna odpowiedź odpalała animację od nowa. */
+function addQuizPoints() {
+  if (!quizEls) return;
+  const { score } = quizEls;
+  score.points += QUIZ_SCORE.gain;
+  score.value.textContent = String(score.points);
+  score.el.classList.remove("gain");
+  void score.el.offsetWidth;
+  score.el.classList.add("gain");
+}
+
 /* --- Widok quizu: tło + punkty + pytanie + odpowiedzi + pasek czasu --- */
 function buildQuiz(root) {
   root.appendChild(makeBg(QUIZ_BG));
 
-  const points = document.createElement("div");
-  points.className = "quiz-points";
-  points.textContent = POINTS.value;
-  root.appendChild(points);
+  const score = makeQuizScore();
+  root.appendChild(score.el);
 
   const question = document.createElement("div");
   question.className = "quiz-question";
@@ -1236,7 +1310,7 @@ function buildQuiz(root) {
   timer.appendChild(bar);
   root.appendChild(timer);
 
-  quizEls = { grid, bar, answers: [] };
+  quizEls = { grid, bar, answers: [], score };
 
   /* Quiz nie ma rund — kolory bierze z motywu bazowego */
   applyTheme(THEMES[0]);
@@ -1655,6 +1729,23 @@ function mountVersion(id) {
   startRound(state.roundIndex); // restart rundy, żeby animacja poszła od zera
 }
 
+/* Wersja animacji dodania punktów. Wariant siedzi w atrybucie na panelu,
+   więc sama animacja jest w CSS — dołożenie kolejnej wersji to wpis
+   w QUIZ_POINT_ANIMS i blok reguł obok. */
+function mountQuizPointAnim(id) {
+  const anim = QUIZ_POINT_ANIMS.find((a) => a.id === id) || QUIZ_POINT_ANIMS[0];
+  currentQuizPointAnimId = anim.id;
+
+  document.querySelectorAll("#quiz-points-switch button").forEach((btn) => {
+    btn.setAttribute("aria-pressed", String(btn.dataset.points === anim.id));
+  });
+  if (quizEls) {
+    quizEls.score.el.dataset.anim = anim.id;
+    addQuizPoints(); // kliknięcie wersji od razu ją pokazuje
+  }
+  remember(QUIZ_POINTS_STORAGE_KEY, anim.id);
+}
+
 /* Wersja kolejności feedbacku. Zmienia tylko rozkład jazdy ujawniania,
    więc wystarczy zrestartować pytanie — przyciski zostają te same. */
 function mountSeqVersion(id) {
@@ -1794,6 +1885,19 @@ function buildTopbar() {
     results.appendChild(btn);
   });
   document.getElementById("results-replay").addEventListener("click", playResults);
+
+  const pointAnims = document.getElementById("quiz-points-switch");
+  QUIZ_POINT_ANIMS.forEach((v) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = v.label;
+    btn.title = v.title;
+    btn.dataset.points = v.id;
+    btn.setAttribute("aria-pressed", String(v.id === currentQuizPointAnimId));
+    btn.addEventListener("click", () => mountQuizPointAnim(v.id));
+    pointAnims.appendChild(btn);
+  });
+  document.getElementById("quiz-points-replay").addEventListener("click", addQuizPoints);
 
   const seqVersions = document.getElementById("seq-switch");
   SEQ_VERSIONS.forEach((v) => {
@@ -1954,6 +2058,7 @@ const quiz = {
   elapsedInPhase: 0,
   frozenAt: 0,
   selected: null, // id wybranej odpowiedzi albo null
+  scored: false, // czy punkty za to pytanie już poleciały
 };
 
 /* Konkurencja „kolejność” — własny zegar faz, pauza wspólna z resztą.
@@ -2054,6 +2159,7 @@ function setSegmentsProgress(progress) {
 
 /* --- Quiz --- */
 function startQuestion() {
+  quiz.scored = false;
   quiz.phase = "running";
   quiz.phaseStart = performance.now();
   quiz.elapsedInPhase = 0;
@@ -2069,6 +2175,13 @@ function selectAnswer(id) {
   setSelected(id);
   /* Całą animację wciśnięcia robią przejścia CSS na przycisku
      (zmniejszenie i zmiana twarzy) — tu wystarczy zmiana stanu. */
+
+  /* Punkty lecą raz na pytanie, przy pierwszym trafieniu w poprawną
+     odpowiedź — zmiana zdania na inną i z powrotem ich nie powiela. */
+  if (id === QUIZ.correct && !quiz.scored) {
+    quiz.scored = true;
+    addQuizPoints();
+  }
 }
 
 function setSelected(id) {
@@ -2470,6 +2583,7 @@ currentVersionId = initialChoice("v", STORAGE_KEY, VERSIONS.map((v) => v.id), DE
 currentQuizVersionId = initialChoice("quiz", QUIZ_STORAGE_KEY, QUIZ_VERSIONS.map((v) => v.id), DEFAULT_QUIZ_VERSION);
 currentResultsVersionId = initialChoice("wyniki", RESULTS_STORAGE_KEY, RESULTS_VERSIONS.map((v) => v.id), DEFAULT_RESULTS_VERSION);
 currentSeqVersionId = initialChoice("kolejnosc", SEQ_STORAGE_KEY, SEQ_VERSIONS.map((v) => v.id), DEFAULT_SEQ_VERSION);
+currentQuizPointAnimId = initialChoice("punkty", QUIZ_POINTS_STORAGE_KEY, QUIZ_POINT_ANIMS.map((a) => a.id), DEFAULT_QUIZ_POINT_ANIM);
 setLifeAnim(initialChoice("anim", ANIM_STORAGE_KEY, LIFE_ANIMS.map((a) => a.id), DEFAULT_ANIM));
 setTimerColor(initialChoice("timer", TIMER_COLOR_STORAGE_KEY, TIMER_COLORS.map((c) => c.id), DEFAULT_TIMER_COLOR));
 /* Feedback ustawiamy przed zbudowaniem widoku — mountWypFeedback sięga

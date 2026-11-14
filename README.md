@@ -280,8 +280,8 @@ w Figmie: pełny −41 / −53 / +65 / +53, pusty −33,524 / −43,784 / +58,64
 
 ## Ekran: Tablet gracza · quiz
 
-Pytanie na górze, cztery odpowiedzi w siatce 2×2 i pasek czasu na dole.
-Gracz ma **10 sekund** na odpowiedź:
+Panel punktów na górze, pytanie, cztery odpowiedzi w siatce 2×2 i pasek
+czasu na dole. Gracz ma **10 sekund** na odpowiedź:
 
 - kliknięcie (dotknięcie) przycisku zaznacza odpowiedź — przycisk przechodzi
   w stan wciśnięty; zaznaczona może być tylko jedna,
@@ -292,7 +292,43 @@ Gracz ma **10 sekund** na odpowiedź:
   zapętla).
 
 Czas, przerwa na końcu, treść pytania i odpowiedzi siedzą w `QUIZ`
-i `QUIZ_ANSWERS` w `app.js`.
+i `QUIZ_ANSWERS` w `app.js`. Poprawna odpowiedź to pole `QUIZ.correct`
+(domyślnie „Na Antarktydzie").
+
+### Panel punktów i animacja ich dodania
+
+Na górze ekranu stoi kontener z licznikiem, a po jego obu stronach
+**symetryczne linie** z gradientem — ciemnym na zewnętrznym końcu
+i jasnym przy kontenerze. Obie linie to ten sam plik SVG; prawa jest
+lustrzanym odbiciem lewej (w Figmie też, choć metadane podają dla niej
+mylącą pozycję — sprawdzone pomiarem na renderze: prawa jest dokładnym
+odbiciem lewej względem x 1440).
+
+Trafienie w poprawną odpowiedź dolicza punkty (`QUIZ_SCORE.gain`,
+domyślnie 500) i odpala animację:
+
+| Wersja | Co się dzieje |
+| --- | --- |
+| **V1 · gradient na zewnątrz** | jasny punkt gradientu przebiega **raz** po obu liniach od kontenera na zewnątrz (900 ms), a pod kontenerem zapala się i gaśnie poświata |
+
+Punkty lecą **raz na pytanie**, przy pierwszym trafieniu — zmiana zdania
+na inną odpowiedź i powrót ich nie powiela. Po upływie czasu przyciski
+już nie reagują.
+
+Przebieg robi druga warstwa linii: ta sama grafika, po której jedzie
+maska wycinająca wąskie okno (pozycja idzie zmienną zarejestrowaną przez
+`@property`, bo zwykłych zmiennych przeglądarka nie animuje). Odbicie
+prawej linii samo odwraca kierunek, więc obie strony obsługuje jedna
+animacja. Poświata pod punktami to `drop-shadow`, a nie `box-shadow` —
+trzyma się ściętych rogów kontenera, a nie jego prostokątnego pudełka.
+
+**Uwaga:** linia ma w designie 1 px grubości i niskie krycie, więc
+w podglądzie przeskalowanym do okna przebieg jest ledwie widoczny —
+widać go dopiero w skali 1:1 (czyli tak, jak poleci na tablecie). Siłę
+świecenia trzyma jedna reguła `.quiz-score-pulse img` w `styles.css`.
+
+Animacja jest autorska — w Figmie jest tylko stan spoczynku. Przycisk
+**▶ +punkty** w pasku odpala ją bez rozgrywania pytania.
 
 ### Trzy wersje do porównania
 
@@ -436,6 +472,7 @@ zapowiedzi.
 | `R` | restart: runda 1, pełne życia, zwolniony przycisk; w quizie pytanie od nowa, na wynikach animacja od nowa |
 | `1`–`5` | wersja timera (na instruktażu) |
 | `1`–`3` | wersja animacji wciśnięcia (w quizie) |
+| klik w poprawną odpowiedź | dolicza punkty z animacją (w quizie) |
 | `1`–`3` | wersja animacji wyników (na ekranie wyników) |
 | `1`–`2` | wersja kolejności feedbacku (na ekranie kolejności) |
 | `R` | na ekranie kolejności: pytanie od nowa (od zapowiedzi) |
@@ -533,6 +570,18 @@ w `assets/`:
   90 px, numer w slocie 128 px, ramka komunikatu 427,436×207 na
   (1226, 351,19). Zapowiedź korzysta z tej samej ramki i panelu co ekran
   wyniku (2748×1686 na (66, 57), panel z paddingiem 64).
+- **Quiz, panel punktów** — plik `UCzHnyMnTZ2AS0PnYsw6eR`, node
+  `2492-36948`: kontener 526,5×195,5 na (1177, 26) z licznikiem
+  (Noto Sans Medium 100 px, tracking 5 %, pole 307×150 na (1286, 38))
+  i dwie linie 538×201 na y 34 — lewa na x 694, prawa lustrzanie na
+  1648. Oba pliki SVG są większe od swoich pól (kontener o margines
+  potrójnego cienia, linia o obrys i kropki na końcach), stąd ujemne
+  przesunięcia obrazków.
+  **Ten node jest nowszą wersją całego ekranu quizu** i ma pełne
+  2880×1800 zamiast 2869,75×1768,67, więc elementy „na środku" stoją na
+  x 1440. Prototyp przeszedł na 1440 — to zarazem środek sceny i wartość
+  zgodna z pozostałymi ekranami. Pozostałe różnice tego node'a **nie**
+  zostały wprowadzone (patrz niżej).
 - **Quiz, dodatkowe warianty przycisków** — **inny plik**:
   `feDfMhqinxZSqSzWsB7qFF` („Estigroup — Newsletter”), node `15-115`
   (ciemniejsze wciśnięte, twarz `darker`) i node `15-148` (jaśniejsze
@@ -563,6 +612,20 @@ obrysów slotów są **dopasowane liczbowo do renderów z Figmy** (średni
 błąd 6–8 na 255). Kontrolę dopasowania przeszedł obrys kafelka, dla
 którego prawidłowa wartość była znana z quizu.
 
+### Quiz — czego nowszy node jeszcze nie ma w prototypie
+
+Node `2492-36948` (z którego pochodzi panel punktów) różni się od
+wdrożonego ekranu quizu jeszcze w typografii. To zmiany wyglądu całego
+ekranu, nie panelu, więc czekają na decyzję:
+
+- **pytanie** jest tam w Noto Sans **Bold** 90 px, a w prototypie
+  w Medium,
+- **odpowiedzi** są w Noto Sans **Bold 72 px w kolorze beige/500
+  (`#d8ca94`)**, a w prototypie w Medium 80 px w `#fff8de`.
+
+Wdrożenie któregokolwiek z tych punktów zmienia wygląd wszystkich
+czterech przycisków i pytania, więc nie weszło razem z panelem.
+
 ### Quiz — na co uważać przy kolejnych designach
 
 Przy quizie sama zakładka Dev Mode (eksport CSS) okazała się niepełna.
@@ -571,7 +634,8 @@ renderu z Figmy na prototyp:
 
 - **Ramka ma 2869,75×1768,67**, a nie 2880×1800 (tło w niej ma pełne
   2880×1800). Elementy „na środku” liczą się od środka ramki, więc stoją na
-  x 1435, a nie 1440 — prototyp trzyma pozycje z Figmy.
+  x 1435. Nowszy node `2492-36948` ma pełne 2880×1800, więc prototyp
+  stoi już na 1440.
 - **Obrysy rdzeni przycisków leżą na zewnątrz** ramki (6 px), a obrysy
   skorupy i paska czasu w środku; żaden nie zajmuje miejsca w układzie.
 - **Obrysy są gradientami** (skorupa: od ciemnego do złotego, pasek czasu:

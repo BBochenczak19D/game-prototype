@@ -645,7 +645,9 @@ body {
   .seq-tile.tap,
   .seq-number.wchodzi,
   .wyp-plate.leaving,
-  .seq-correct-label.shown {
+  .seq-correct-label.shown,
+  .quiz-score.gain .quiz-score-pulse,
+  .quiz-score.gain .quiz-score-box > img {
     animation-duration: 1ms !important;
   }
 
@@ -1193,22 +1195,23 @@ body {
    („Quiz/Pytanie i odpowiedzi”); stany wciśnięte przycisków:
    2169-740 / 742 / 744 / 773. Geometria i cienie 1:1 z Dev Mode.
 
-   Uwaga na środek: ta ramka ma w Figmie 2869.75×1768.67 (tło w niej
-   ma pełne 2880×1800), a elementy „na środku” liczą się od środka
-   ramki — x 1435, nie 1440 jak na scenie. Trzymamy pozycje z Figmy.
+   Uwaga na środek: starsza ramka tego ekranu miała w Figmie
+   2869.75×1768.67, więc elementy „na środku” stały na x 1435. Nowszy
+   node 2492-36948 (plik UCzHnyMnTZ2AS0PnYsw6eR), z którego pochodzi
+   panel punktów, ma pełne 2880×1800 — środek jest więc na 1440 i tak
+   stoją tu wszystkie wyśrodkowane elementy.
    ============================================================ */
 
-/* Punkty (node 2168-702) i pytanie (node 2168-703): Noto Sans Medium,
-   beige/500, wyśrodkowane na x 1435.
+/* Pytanie (node 2168-703): Noto Sans Medium, beige/500,
+   wyśrodkowane na x 1440.
    font-smoothing: Chrome na macOS domyślnie pogrubia jasny tekst na
    ciemnym tle — bez tego litery wychodzą wyraźnie grubsze niż w Figmie
    (sprawdzone nakładką różnicową z renderem Figmy). */
-.quiz-points,
 .quiz-question,
 .seq-points,
 .seq-prompt {
   position: absolute;
-  left: 1435px;
+  left: 1440px;
   transform: translate(-50%, -50%);
   font-family: "Noto Sans", system-ui, sans-serif;
   font-weight: 500;
@@ -1218,12 +1221,6 @@ body {
   color: var(--text);
   text-align: center;
   user-select: none;
-}
-
-.quiz-points {
-  top: 91px;
-  font-size: 72px;
-  white-space: nowrap;
 }
 
 /* Pole pytania 2400×384 ze środkiem na y 393.26, tekst wyśrodkowany w pionie */
@@ -1611,7 +1608,7 @@ body {
    tło turkusowe liczy się od całego paska i jest przycięte do środka. */
 .quiz-timer {
   position: absolute;
-  left: 1435px;
+  left: 1440px;
   top: 1690px;
   transform: translateX(-50%);
   width: 1424px;
@@ -1651,12 +1648,6 @@ body {
    stoi na x 1440, a nie 1435. Slot na numer i kafelek odpowiedzi to ten
    sam komponent co odpowiedzi w quizie — poniżej są wyłącznie różnice.
    ============================================================ */
-.seq-points,
-.seq-prompt,
-.seq-timer {
-  left: 1440px;
-}
-
 .seq-points {
   top: 91px;
   font-size: 72px;
@@ -1855,4 +1846,135 @@ body {
   text-align: center;
   white-space: nowrap;
   user-select: none;
+}
+
+
+/* ============================================================
+   PANEL PUNKTÓW (ekran quizu)
+   Figma: plik UCzHnyMnTZ2AS0PnYsw6eR, node 2492-36948. Kontener
+   526,5×195,5 na (1177, 26), po bokach dwie linie 538×201 na y 34 —
+   lewa na x 694, prawa lustrzanie na 1648. Oba pliki SVG są większe od
+   swoich pól (kontener o margines potrójnego cienia, linia o obrys
+   i kropki na końcach), dlatego obrazki mają ujemne przesunięcia
+   wstawiane z app.js prosto z granic renderu w Figmie.
+   ============================================================ */
+.quiz-score {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.quiz-score-box,
+.quiz-score-line,
+.quiz-score-value {
+  position: absolute;
+}
+
+.quiz-score-box > img,
+.quiz-score-line img {
+  position: absolute;
+  max-width: none;
+}
+
+/* Licznik: Noto Sans Medium 100 px, tracking 5 % (node 2492-36960) */
+.quiz-score-value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Noto Sans", system-ui, sans-serif;
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 100px;
+  line-height: 1.5;
+  letter-spacing: 5px;
+  text-indent: 5px; /* tracking dokłada odstęp po ostatniej cyfrze */
+  color: var(--text);
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Prawa linia to ta sama grafika odbita — odbicie odwraca też kierunek
+   animacji, więc obie przebiegają od kontenera na zewnątrz */
+.quiz-score-line.right {
+  transform: scaleX(-1);
+}
+
+/* Warstwa przebiegu leży na spodniej i tylko dokłada światła */
+.quiz-score-pulse {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  mix-blend-mode: screen;
+}
+
+/* Linia jest cienka (1 px) i półprzezroczysta, więc sama poświata by jej
+   nie rozjaśniła. Poświaty są łańcuchem — każda liczy się od wyniku
+   poprzedniej, więc krycie narasta i przebieg jest widoczny. */
+.quiz-score-pulse img {
+  filter:
+    /* trzy poświaty bez rozmycia zagęszczają samą linię… */
+    drop-shadow(0 0 0.6px #0dedde)
+    drop-shadow(0 0 0.6px #0dedde)
+    drop-shadow(0 0 0.6px #0dedde)
+    brightness(1.7)
+    /* …a dwie rozmyte dokładają wokół niej światło */
+    drop-shadow(0 0 10px rgba(13, 237, 222, 0.85))
+    drop-shadow(0 0 26px rgba(13, 237, 222, 0.6));
+}
+
+/* ------------------------------------------------------------
+   V1 — jasny punkt gradientu przebiega raz od kontenera na zewnątrz,
+   a pod kontenerem zapala się poświata. Pozycja przebiegu jedzie
+   zmienną zarejestrowaną przez @property (zwykłych zmiennych
+   przeglądarka nie animuje). Animacja jest autorska — w Figmie jest
+   tylko stan spoczynku.
+   ------------------------------------------------------------ */
+@property --pulse-pos {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 110%;
+}
+
+.quiz-score[data-anim="v1"] .quiz-score-pulse {
+  --pulse-pos: 110%;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent calc(var(--pulse-pos) - 24%),
+    #000 var(--pulse-pos),
+    transparent calc(var(--pulse-pos) + 24%)
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent calc(var(--pulse-pos) - 24%),
+    #000 var(--pulse-pos),
+    transparent calc(var(--pulse-pos) + 24%)
+  );
+}
+
+.quiz-score[data-anim="v1"].gain .quiz-score-pulse {
+  animation: score-pulse 900ms cubic-bezier(0.33, 0, 0.3, 1);
+}
+
+/* Jasny koniec gradientu jest przy kontenerze, czyli po prawej stronie
+   pudełka lewej linii — przebieg startuje stamtąd i schodzi poza lewą
+   krawędź, więc jedzie „na zewnątrz” */
+@keyframes score-pulse {
+  0%   { opacity: 0;   --pulse-pos: 110%; }
+  12%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { opacity: 0;   --pulse-pos: -26%; }
+}
+
+/* Poświata pod punktami — drop-shadow, a nie box-shadow, żeby trzymała
+   się ściętych rogów kontenera, a nie jego prostokątnego pudełka */
+.quiz-score[data-anim="v1"].gain .quiz-score-box > img {
+  animation: score-box-glow 900ms ease-out;
+}
+
+@keyframes score-box-glow {
+  0%   { filter: none; }
+  30%  { filter: drop-shadow(0 0 16px rgba(13, 237, 222, 0.5)) drop-shadow(0 0 44px rgba(13, 237, 222, 0.28)); }
+  100% { filter: none; }
 }
