@@ -591,8 +591,9 @@ w `assets/`:
 - **Quiz, panel punktów** — plik `UCzHnyMnTZ2AS0PnYsw6eR`, node
   `2492-36948`: kontener 506,5×180,5 na (1187, 26) z licznikiem
   (Noto Sans Medium 100 px, tracking 5 %, pole 307×150 na (1286, 33))
-  i dwie linie 548×186 na y 34 — lewa na x 694, prawa lustrzanie na
-  1638. Oba pliki SVG są większe od swoich pól (kontener o margines
+  i dwie linie 629×186 na y 34 — lewa na x 613, prawa lustrzanie na
+  1638 (dłuższy kształt z node'a `2492-36961`; w Figmie ma go na razie
+  tylko prawa linia, w prototypie obie). Oba pliki SVG są większe od swoich pól (kontener o margines
   potrójnego cienia, linia o obrys i kropki na końcach), stąd ujemne
   przesunięcia obrazków.
   **Ten node jest nowszą wersją całego ekranu quizu** i ma pełne

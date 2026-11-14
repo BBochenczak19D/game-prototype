@@ -497,8 +497,8 @@ const QUIZ_SCORE = {
   gain: 500,   // ile dodaje poprawna odpowiedź
   box:  { x: 1187, y: 26, w: 506.5, h: 180.5,
           src: "assets/points-box.svg", imgX: -44, imgY: -54, imgW: 594.5, imgH: 290.5 },
-  line: { y: 34, w: 548, h: 186, leftX: 694,
-          src: "assets/points-line.svg", imgX: -2.6665, imgY: -2.6665, imgW: 553.333, imgH: 191.333 },
+  line: { y: 34, w: 629, h: 186, leftX: 613,
+          src: "assets/points-line.svg", imgX: -2.6665, imgY: -0.5, imgW: 634.333, imgH: 189.167 },
   text: { x: 1286, y: 33, w: 307, h: 150 },
 };
 
