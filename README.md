@@ -309,7 +309,7 @@ domyślnie 500) i odpala animację:
 
 | Wersja | Co się dzieje |
 | --- | --- |
-| **V1 · gradient na zewnątrz** | jasny punkt gradientu przebiega **raz** po obu liniach od kontenera na zewnątrz (1,3 s), a pod kontenerem zapala się i gaśnie poświata |
+| **V1 · gradient na zewnątrz** | jasny punkt gradientu przebiega **raz** po obu liniach od kontenera na zewnątrz (1,7 s), a pod kontenerem zapala się i gaśnie poświata |
 
 Punkty lecą **raz na pytanie**, przy pierwszym trafieniu — zmiana zdania
 na inną odpowiedź i powrót ich nie powiela. Po upływie czasu przyciski
