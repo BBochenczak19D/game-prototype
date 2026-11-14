@@ -479,8 +479,9 @@ const QUIZ_BG = { src: "assets/bg-quiz.png", w: 101.04, h: 101.05, top: 0 };
 const QUIZ = {
   question: "Największa pustynia na świecie to wcale nie Sahara. Gdzie się znajduje?",
   correct: "red",    // „Na Antarktydzie” — za nią lecą punkty
-  durationMs: 10000, // czas na odpowiedź = pełny pasek na dole
-  endHoldMs: 1500,   // po końcu czasu tyle stoi stan końcowy, potem pytanie od nowa
+  durationMs: 3000,  // czas na odpowiedź = pełny pasek na dole
+  endHoldMs: 2000,   // po końcu czasu tyle stoi stan końcowy, potem pytanie od nowa
+                     // (tyle, żeby animacja punktów zdążyła dobiec do końca)
 };
 
 /* ============================================================

@@ -1861,7 +1861,7 @@ body {
 .quiz-score {
   /* Jeden czas dla przebiegu po liniach i dla poświaty — obie kończą się
      razem, więc tempo całej animacji stroi się tu jedną liczbą. */
-  --score-gain: 1700ms;
+  --score-gain: 1100ms;
 
   position: absolute;
   inset: 0;
@@ -1918,14 +1918,17 @@ body {
    poprzedniej, więc krycie narasta i przebieg jest widoczny. */
 .quiz-score-pulse img {
   filter:
-    /* trzy poświaty bez rozmycia zagęszczają samą linię… */
+    /* poświaty bez rozmycia zagęszczają samą linię — każda liczy się od
+       wyniku poprzedniej, więc krycie (a z nim nasycenie koloru) rośnie… */
     drop-shadow(0 0 0.6px #0dedde)
     drop-shadow(0 0 0.6px #0dedde)
     drop-shadow(0 0 0.6px #0dedde)
-    brightness(1.7)
-    /* …a dwie rozmyte dokładają wokół niej światło */
-    drop-shadow(0 0 10px rgba(13, 237, 222, 0.85))
-    drop-shadow(0 0 26px rgba(13, 237, 222, 0.6));
+    drop-shadow(0 0 0.6px #0dedde)
+    drop-shadow(0 0 0.6px #0dedde)
+    brightness(2.1) saturate(1.35)
+    /* …a rozmyte dokładają wokół niej światło */
+    drop-shadow(0 0 12px rgba(13, 237, 222, 0.95))
+    drop-shadow(0 0 32px rgba(13, 237, 222, 0.7));
 }
 
 /* ------------------------------------------------------------
@@ -1938,22 +1941,22 @@ body {
 @property --pulse-pos {
   syntax: "<percentage>";
   inherits: false;
-  initial-value: 110%;
+  initial-value: 126%;
 }
 
 .quiz-score[data-anim="v1"] .quiz-score-pulse {
-  --pulse-pos: 110%;
+  --pulse-pos: 126%;
   -webkit-mask-image: linear-gradient(
     90deg,
-    transparent calc(var(--pulse-pos) - 24%),
+    transparent calc(var(--pulse-pos) - 38%),
     #000 var(--pulse-pos),
-    transparent calc(var(--pulse-pos) + 24%)
+    transparent calc(var(--pulse-pos) + 38%)
   );
   mask-image: linear-gradient(
     90deg,
-    transparent calc(var(--pulse-pos) - 24%),
+    transparent calc(var(--pulse-pos) - 38%),
     #000 var(--pulse-pos),
-    transparent calc(var(--pulse-pos) + 24%)
+    transparent calc(var(--pulse-pos) + 38%)
   );
 }
 
@@ -1965,10 +1968,10 @@ body {
    pudełka lewej linii — przebieg startuje stamtąd i schodzi poza lewą
    krawędź, więc jedzie „na zewnątrz” */
 @keyframes score-pulse {
-  0%   { opacity: 0;   --pulse-pos: 110%; }
+  0%   { opacity: 0;   --pulse-pos: 126%; }
   12%  { opacity: 1; }
   85%  { opacity: 1; }
-  100% { opacity: 0;   --pulse-pos: -26%; }
+  100% { opacity: 0;   --pulse-pos: -42%; }
 }
 
 /* Poświata pod punktami — drop-shadow, a nie box-shadow, żeby trzymała

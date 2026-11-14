@@ -281,15 +281,15 @@ w Figmie: pełny −41 / −53 / +65 / +53, pusty −33,524 / −43,784 / +58,64
 ## Ekran: Tablet gracza · quiz
 
 Panel punktów na górze, pytanie, cztery odpowiedzi w siatce 2×2 i pasek
-czasu na dole. Gracz ma **10 sekund** na odpowiedź:
+czasu na dole. Gracz ma **3 sekundy** na odpowiedź:
 
 - kliknięcie (dotknięcie) przycisku zaznacza odpowiedź — przycisk przechodzi
   w stan wciśnięty; zaznaczona może być tylko jedna,
 - do końca czasu można zmienić zdanie i kliknąć inną,
 - pasek czasu kurczy się od prawej do lewej; gdy zniknie, odpowiedzi są
   zablokowane,
-- po 1,5 s stanu końcowego to samo pytanie startuje od nowa (prototyp się
-  zapętla).
+- po 2 s stanu końcowego to samo pytanie startuje od nowa (prototyp się
+  zapętla) — tyle, żeby animacja punktów zdążyła dobiec do końca.
 
 Czas, przerwa na końcu, treść pytania i odpowiedzi siedzą w `QUIZ`
 i `QUIZ_ANSWERS` w `app.js`. Poprawna odpowiedź to pole `QUIZ.correct`
@@ -309,7 +309,7 @@ i odpala animację:
 
 | Wersja | Co się dzieje |
 | --- | --- |
-| **V1 · gradient** | jasny punkt gradientu przebiega **raz** po obu liniach od kontenera na zewnątrz (1,7 s), a pod kontenerem zapala się i gaśnie poświata |
+| **V1 · gradient** | jasny punkt gradientu przebiega **raz** po obu liniach od kontenera na zewnątrz (1,1 s), a pod kontenerem zapala się i gaśnie poświata |
 
 **Kiedy lecą punkty** — drugi przełącznik, bo to osobna sprawa od samej
 animacji:
@@ -336,7 +336,9 @@ trzyma się ściętych rogów kontenera, a nie jego prostokątnego pudełka.
 
 Tempo obu ruchów trzyma jedna zmienna `--score-gain` na `.quiz-score`
 — przebieg i poświata kończą się razem, więc całość przyspiesza się
-i zwalnia jedną liczbą.
+i zwalnia jedną liczbą. Szerokość świecącego okna to procenty w masce
+`.quiz-score[data-anim="v1"] .quiz-score-pulse` (obecnie ±38 % długości
+linii), a siłę koloru trzyma `filter` w `.quiz-score-pulse img`.
 
 **Uwaga:** linia ma w designie 1 px grubości i niskie krycie, więc
 w podglądzie przeskalowanym do okna przebieg jest ledwie widoczny —
