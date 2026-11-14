@@ -304,16 +304,28 @@ lustrzanym odbiciem lewej (w Figmie też, choć metadane podają dla niej
 mylącą pozycję — sprawdzone pomiarem na renderze: prawa jest dokładnym
 odbiciem lewej względem x 1440).
 
-Trafienie w poprawną odpowiedź dolicza punkty (`QUIZ_SCORE.gain`,
-domyślnie 500) i odpala animację:
+Poprawna odpowiedź dolicza punkty (`QUIZ_SCORE.gain`, domyślnie 500)
+i odpala animację:
 
 | Wersja | Co się dzieje |
 | --- | --- |
-| **V1 · gradient na zewnątrz** | jasny punkt gradientu przebiega **raz** po obu liniach od kontenera na zewnątrz (1,7 s), a pod kontenerem zapala się i gaśnie poświata |
+| **V1 · gradient** | jasny punkt gradientu przebiega **raz** po obu liniach od kontenera na zewnątrz (1,7 s), a pod kontenerem zapala się i gaśnie poświata |
 
-Punkty lecą **raz na pytanie**, przy pierwszym trafieniu — zmiana zdania
-na inną odpowiedź i powrót ich nie powiela. Po upływie czasu przyciski
-już nie reagują.
+**Kiedy lecą punkty** — drugi przełącznik, bo to osobna sprawa od samej
+animacji:
+
+| Wariant | Kiedy |
+| --- | --- |
+| **po czasie** (domyślny) | jak w rozgrywce: gracz zaznacza odpowiedź i czeka; punkty lecą dopiero, gdy skończy się czas |
+| **na klik** | punkty lecą od razu po wciśnięciu poprawnej odpowiedzi |
+
+W obu wariantach punkty lecą **raz na pytanie**: w „na klik" przy
+pierwszym trafieniu (zmiana zdania i powrót ich nie powiela), w „po
+czasie" liczy się ostatnie zaznaczenie w momencie końca odliczania.
+Po upływie czasu przyciski już nie reagują.
+
+Wariant można też podać w adresie: `?punkty-kiedy=timeout`
+albo `…=click`.
 
 Przebieg robi druga warstwa linii: ta sama grafika, po której jedzie
 maska wycinająca wąskie okno (pozycja idzie zmienną zarejestrowaną przez
@@ -575,10 +587,10 @@ w `assets/`:
   (1226, 351,19). Zapowiedź korzysta z tej samej ramki i panelu co ekran
   wyniku (2748×1686 na (66, 57), panel z paddingiem 64).
 - **Quiz, panel punktów** — plik `UCzHnyMnTZ2AS0PnYsw6eR`, node
-  `2492-36948`: kontener 526,5×195,5 na (1177, 26) z licznikiem
-  (Noto Sans Medium 100 px, tracking 5 %, pole 307×150 na (1286, 38))
-  i dwie linie 538×201 na y 34 — lewa na x 694, prawa lustrzanie na
-  1648. Oba pliki SVG są większe od swoich pól (kontener o margines
+  `2492-36948`: kontener 506,5×180,5 na (1187, 26) z licznikiem
+  (Noto Sans Medium 100 px, tracking 5 %, pole 307×150 na (1286, 33))
+  i dwie linie 548×186 na y 34 — lewa na x 694, prawa lustrzanie na
+  1638. Oba pliki SVG są większe od swoich pól (kontener o margines
   potrójnego cienia, linia o obrys i kropki na końcach), stąd ujemne
   przesunięcia obrazków.
   **Ten node jest nowszą wersją całego ekranu quizu** i ma pełne

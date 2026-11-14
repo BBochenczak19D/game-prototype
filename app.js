@@ -494,16 +494,27 @@ const QUIZ = {
 const QUIZ_SCORE = {
   start: 300,  // stan wyjściowy licznika
   gain: 500,   // ile dodaje poprawna odpowiedź
-  box:  { x: 1177, y: 26, w: 526.5, h: 195.5,
-          src: "assets/points-box.svg", imgX: -44, imgY: -54, imgW: 614.5, imgH: 305.5 },
-  line: { y: 34, w: 538, h: 201, leftX: 694,
-          src: "assets/points-line.svg", imgX: -2.6665, imgY: -2.6665, imgW: 543.333, imgH: 206.333 },
-  text: { x: 1286, y: 38, w: 307, h: 150 },
+  box:  { x: 1187, y: 26, w: 506.5, h: 180.5,
+          src: "assets/points-box.svg", imgX: -44, imgY: -54, imgW: 594.5, imgH: 290.5 },
+  line: { y: 34, w: 548, h: 186, leftX: 694,
+          src: "assets/points-line.svg", imgX: -2.6665, imgY: -2.6665, imgW: 553.333, imgH: 191.333 },
+  text: { x: 1286, y: 33, w: 307, h: 150 },
 };
+
+/* Kiedy lecą punkty. W rozgrywce gracz zaznacza odpowiedź i czeka na
+   koniec czasu — dopiero wtedy wiadomo, czy trafił, i wtedy wchodzi
+   animacja. Drugi wariant (od razu po wciśnięciu) został do porównania. */
+const QUIZ_SCORE_TRIGGERS = [
+  { id: "timeout", label: "po czasie",
+    title: "Jak w rozgrywce: gracz zaznacza odpowiedź, a punkty lecą dopiero po upływie czasu" },
+  { id: "click", label: "na klik",
+    title: "Punkty lecą od razu po wciśnięciu poprawnej odpowiedzi" },
+];
+const DEFAULT_QUIZ_SCORE_TRIGGER = "timeout";
 
 /* Wersje animacji dodania punktów (przełącznik w pasku) */
 const QUIZ_POINT_ANIMS = [
-  { id: "v1", label: "V1 · gradient na zewnątrz",
+  { id: "v1", label: "V1 · gradient",
     title: "Jasny punkt gradientu przebiega raz od kontenera na zewnątrz, a pod punktami zapala się poświata" },
 ];
 const DEFAULT_QUIZ_POINT_ANIM = "v1";
@@ -744,7 +755,7 @@ const LIVES_VIEWS = ["tablet", "wynik"];
 const HINTS = {
   instruktaz: "spacja — pauza · ←/→ — runda · R — restart",
   tablet: "kliknij przycisk · Z — tracisz życie · 0–3 — skok do stanu · R — restart",
-  quiz: "kliknij odpowiedź · dobra odpowiedź dolicza punkty · spacja — pauza · R — od nowa · 1–3 — wersja",
+  quiz: "zaznacz odpowiedź i poczekaj — dobra dolicza punkty · spacja — pauza · R — od nowa · 1–3 — wersja",
   kolejnosc: "klikaj odpowiedzi w swojej kolejności · spacja — pauza · R — od nowa · 1–2 — wersja",
   wynik: "Z — tracisz życie · 0–3 — skok do stanu · R — pełne życia",
   wyniki: "R — odtwórz animację od nowa · 1–3 — wersja",
@@ -760,6 +771,7 @@ const WYP_FEEDBACK_STORAGE_KEY = "quizsteries-wyp-feedback";
 const WYP_OUTCOME_STORAGE_KEY = "quizsteries-wyp-outcome";
 const SEQ_STORAGE_KEY = "quizsteries-kolejnosc";
 const QUIZ_POINTS_STORAGE_KEY = "quizsteries-quiz-punkty";
+const QUIZ_TRIGGER_STORAGE_KEY = "quizsteries-quiz-punkty-kiedy";
 
 /* ============================================================
    MOTYWY — 5 zestawów kolorów.
@@ -801,6 +813,7 @@ let currentAnimId = DEFAULT_ANIM;
 let currentQuizVersionId = DEFAULT_QUIZ_VERSION;
 let currentSeqVersionId = DEFAULT_SEQ_VERSION;
 let currentQuizPointAnimId = DEFAULT_QUIZ_POINT_ANIM;
+let currentQuizTriggerId = DEFAULT_QUIZ_SCORE_TRIGGER;
 let currentTimerColorId = DEFAULT_TIMER_COLOR;
 let currentWypFeedbackId = DEFAULT_WYP_FEEDBACK;
 let currentWypOutcomeId = DEFAULT_WYP_OUTCOME;
@@ -1729,6 +1742,19 @@ function mountVersion(id) {
   startRound(state.roundIndex); // restart rundy, żeby animacja poszła od zera
 }
 
+/* Moment naliczenia punktów. Zmiana restartuje pytanie, żeby od razu
+   było widać cały przebieg od nowa. */
+function setQuizTrigger(id) {
+  const t = QUIZ_SCORE_TRIGGERS.find((x) => x.id === id) || QUIZ_SCORE_TRIGGERS[0];
+  currentQuizTriggerId = t.id;
+
+  document.querySelectorAll("#quiz-trigger-switch button").forEach((btn) => {
+    btn.setAttribute("aria-pressed", String(btn.dataset.trigger === t.id));
+  });
+  if (quizEls) startQuestion();
+  remember(QUIZ_TRIGGER_STORAGE_KEY, t.id);
+}
+
 /* Wersja animacji dodania punktów. Wariant siedzi w atrybucie na panelu,
    więc sama animacja jest w CSS — dołożenie kolejnej wersji to wpis
    w QUIZ_POINT_ANIMS i blok reguł obok. */
@@ -1897,6 +1923,18 @@ function buildTopbar() {
     btn.addEventListener("click", () => mountQuizPointAnim(v.id));
     pointAnims.appendChild(btn);
   });
+  const triggers = document.getElementById("quiz-trigger-switch");
+  QUIZ_SCORE_TRIGGERS.forEach((t) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = t.label;
+    btn.title = t.title;
+    btn.dataset.trigger = t.id;
+    btn.setAttribute("aria-pressed", String(t.id === currentQuizTriggerId));
+    btn.addEventListener("click", () => setQuizTrigger(t.id));
+    triggers.appendChild(btn);
+  });
+
   document.getElementById("quiz-points-replay").addEventListener("click", addQuizPoints);
 
   const seqVersions = document.getElementById("seq-switch");
@@ -2176,12 +2214,22 @@ function selectAnswer(id) {
   /* Całą animację wciśnięcia robią przejścia CSS na przycisku
      (zmniejszenie i zmiana twarzy) — tu wystarczy zmiana stanu. */
 
-  /* Punkty lecą raz na pytanie, przy pierwszym trafieniu w poprawną
-     odpowiedź — zmiana zdania na inną i z powrotem ich nie powiela. */
-  if (id === QUIZ.correct && !quiz.scored) {
+  /* W wariancie „na klik” punkty lecą od razu, raz na pytanie — zmiana
+     zdania na inną odpowiedź i z powrotem ich nie powiela. W wariancie
+     „po czasie” rozlicza je dopiero koniec odliczania. */
+  if (currentQuizTriggerId === "click" && id === QUIZ.correct && !quiz.scored) {
     quiz.scored = true;
     addQuizPoints();
   }
+}
+
+/* Koniec odliczania: w wariancie „po czasie” dopiero teraz wiadomo, czy
+   gracz trafił — zaznaczenie jest już ostateczne. */
+function settleQuizPoints() {
+  if (currentQuizTriggerId !== "timeout" || quiz.scored) return;
+  if (quiz.selected !== QUIZ.correct) return;
+  quiz.scored = true;
+  addQuizPoints();
 }
 
 function setSelected(id) {
@@ -2488,6 +2536,7 @@ function tickQuiz(now) {
       quiz.phase = "ended";
       quiz.phaseStart = now;
       quiz.elapsedInPhase = 0;
+      settleQuizPoints();
     }
   } else if (elapsed >= QUIZ.endHoldMs) {
     startQuestion();
@@ -2584,6 +2633,7 @@ currentQuizVersionId = initialChoice("quiz", QUIZ_STORAGE_KEY, QUIZ_VERSIONS.map
 currentResultsVersionId = initialChoice("wyniki", RESULTS_STORAGE_KEY, RESULTS_VERSIONS.map((v) => v.id), DEFAULT_RESULTS_VERSION);
 currentSeqVersionId = initialChoice("kolejnosc", SEQ_STORAGE_KEY, SEQ_VERSIONS.map((v) => v.id), DEFAULT_SEQ_VERSION);
 currentQuizPointAnimId = initialChoice("punkty", QUIZ_POINTS_STORAGE_KEY, QUIZ_POINT_ANIMS.map((a) => a.id), DEFAULT_QUIZ_POINT_ANIM);
+currentQuizTriggerId = initialChoice("punkty-kiedy", QUIZ_TRIGGER_STORAGE_KEY, QUIZ_SCORE_TRIGGERS.map((t) => t.id), DEFAULT_QUIZ_SCORE_TRIGGER);
 setLifeAnim(initialChoice("anim", ANIM_STORAGE_KEY, LIFE_ANIMS.map((a) => a.id), DEFAULT_ANIM));
 setTimerColor(initialChoice("timer", TIMER_COLOR_STORAGE_KEY, TIMER_COLORS.map((c) => c.id), DEFAULT_TIMER_COLOR));
 /* Feedback ustawiamy przed zbudowaniem widoku — mountWypFeedback sięga
