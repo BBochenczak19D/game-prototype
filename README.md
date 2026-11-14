@@ -288,7 +288,7 @@ czasu na dole. Gracz ma **3 sekundy** na odpowiedź:
 - do końca czasu można zmienić zdanie i kliknąć inną,
 - pasek czasu kurczy się od prawej do lewej; gdy zniknie, odpowiedzi są
   zablokowane,
-- po 2 s stanu końcowego to samo pytanie startuje od nowa (prototyp się
+- po 2,6 s stanu końcowego to samo pytanie startuje od nowa (prototyp się
   zapętla) — tyle, żeby animacja punktów zdążyła dobiec do końca.
 
 Czas, przerwa na końcu, treść pytania i odpowiedzi siedzą w `QUIZ`
@@ -309,7 +309,7 @@ i odpala animację:
 
 | Wersja | Co się dzieje |
 | --- | --- |
-| **V1 · gradient** | jasny punkt gradientu przebiega **raz** po obu liniach od kontenera na zewnątrz (1,1 s), a pod kontenerem zapala się i gaśnie poświata |
+| **V1 · gradient** | jasny punkt gradientu przebiega **raz** po obu liniach od kontenera na zewnątrz (2,1 s), a pod kontenerem zapala się i gaśnie poświata |
 
 **Kiedy lecą punkty** — drugi przełącznik, bo to osobna sprawa od samej
 animacji:

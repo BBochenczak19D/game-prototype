@@ -1863,7 +1863,7 @@ body {
 .quiz-score {
   /* Jeden czas dla przebiegu po liniach i dla poświaty — obie kończą się
      razem, więc tempo całej animacji stroi się tu jedną liczbą. */
-  --score-gain: 1100ms;
+  --score-gain: 2100ms;
 
   position: absolute;
   inset: 0;

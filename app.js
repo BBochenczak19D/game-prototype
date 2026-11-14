@@ -480,7 +480,7 @@ const QUIZ = {
   question: "Największa pustynia na świecie to wcale nie Sahara. Gdzie się znajduje?",
   correct: "red",    // „Na Antarktydzie” — za nią lecą punkty
   durationMs: 3000,  // czas na odpowiedź = pełny pasek na dole
-  endHoldMs: 2000,   // po końcu czasu tyle stoi stan końcowy, potem pytanie od nowa
+  endHoldMs: 2600,   // po końcu czasu tyle stoi stan końcowy, potem pytanie od nowa
                      // (tyle, żeby animacja punktów zdążyła dobiec do końca)
 };
 
