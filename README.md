@@ -309,7 +309,7 @@ i odpala animację:
 
 | Wersja | Co się dzieje |
 | --- | --- |
-| **V1 · gradient** | jasny punkt gradientu przebiega **raz** po obu liniach od kontenera na zewnątrz (2,1 s), a pod kontenerem zapala się i gaśnie poświata |
+| **V1 · gradient** | jasny punkt gradientu przebiega **raz** po obu liniach od kontenera na zewnątrz (2,1 s), pod kontenerem zapala się i gaśnie poświata, a sam licznik dolicza się do nowej wartości z krótkim podbiciem |
 
 **Kiedy lecą punkty** — drugi przełącznik, bo to osobna sprawa od samej
 animacji:
@@ -333,6 +333,22 @@ maska wycinająca wąskie okno (pozycja idzie zmienną zarejestrowaną przez
 prawej linii samo odwraca kierunek, więc obie strony obsługuje jedna
 animacja. Poświata pod punktami to `drop-shadow`, a nie `box-shadow` —
 trzyma się ściętych rogów kontenera, a nie jego prostokątnego pudełka.
+
+#### Licznik
+
+Liczba nie przeskakuje — **dojeżdża** do nowej wartości w 1,2 s
+(`QUIZ_SCORE.countMs`), krzywą ease out: szybko rusza i spokojnie
+dochodzi. Liczy się krócej niż trwa przebieg po liniach, żeby zdążyła
+się uspokoić, zanim zgaśnie światło. Druga porcja punktów w trakcie
+liczenia rusza od aktualnie pokazywanej liczby, więc nic się nie cofa.
+Równolegle liczba dostaje krótkie podbicie skali (CSS, `score-count-pop`).
+
+Samo doliczanie to dwie funkcje w `app.js` bez żadnych zależności:
+`startScoreCount(el, od, do, czasMs)` ustawia stan, a `stepScoreCount(now)`
+liczy pojedynczą klatkę i jest wołana z pętli rysowania. Żeby przenieść
+to do aplikacji, wystarczy wziąć te dwie funkcje i podpiąć krok pod
+własny `requestAnimationFrame` albo pętlę silnika — poza elementem
+i trzema liczbami nic więcej nie jest potrzebne.
 
 Tempo obu ruchów trzyma jedna zmienna `--score-gain` na `.quiz-score`
 — przebieg i poświata kończą się razem, więc całość przyspiesza się

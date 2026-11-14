@@ -493,8 +493,11 @@ const QUIZ = {
    ujemne `imgX` / `imgY`.
    ============================================================ */
 const QUIZ_SCORE = {
-  start: 300,  // stan wyjściowy licznika
-  gain: 500,   // ile dodaje poprawna odpowiedź
+  start: 300,    // stan wyjściowy licznika
+  gain: 500,     // ile dodaje poprawna odpowiedź
+  countMs: 1200, // w tym czasie licznik dojeżdża do nowej wartości
+                 // (krócej niż przebieg po liniach, żeby liczba zdążyła
+                 //  się uspokoić, zanim zgaśnie światło)
   box:  { x: 1187, y: 26, w: 506.5, h: 180.5,
           src: "assets/points-box.svg", imgX: -44, imgY: -54, imgW: 594.5, imgH: 290.5 },
   line: { y: 34, w: 629, h: 186, leftX: 613,
@@ -1287,15 +1290,39 @@ function makeQuizScore() {
   return { el, value, points: QUIZ_SCORE.start };
 }
 
-/* Dodanie punktów: licznik skacze na nową wartość, a klasa odpala obie
-   animacje naraz — przebieg gradientu po liniach i poświatę pod
-   kontenerem. Klasa schodzi i wraca po przeliczeniu układu, żeby kolejna
-   poprawna odpowiedź odpalała animację od nowa. */
+/* Dojeżdżanie licznika do nowej wartości. Stan trzyma jeden obiekt,
+   a pojedynczy krok liczy `stepScoreCount`, wołany z pętli rysowania —
+   w docelowej aplikacji wystarczy podpiąć ten sam krok pod własny
+   requestAnimationFrame albo pętlę silnika. Nic poza elementem i trzema
+   liczbami nie jest tu potrzebne. */
+const scoreCount = { el: null, from: 0, to: 0, start: 0, durationMs: 0 };
+
+function startScoreCount(el, from, to, durationMs) {
+  Object.assign(scoreCount, { el, from, to, start: performance.now(), durationMs });
+  el.textContent = String(from);
+}
+
+function stepScoreCount(now) {
+  const c = scoreCount;
+  if (!c.el) return;
+  const t = c.durationMs > 0 ? Math.min((now - c.start) / c.durationMs, 1) : 1;
+  const e = 1 - Math.pow(1 - t, 3); // ease out — szybko rusza, spokojnie dochodzi
+  c.el.textContent = String(Math.round(c.from + (c.to - c.from) * e));
+  if (t >= 1) c.el = null; // dojechał, nie ma czego liczyć
+}
+
+/* Dodanie punktów: licznik rusza z aktualnie pokazywanej wartości (więc
+   druga porcja w trakcie liczenia nie cofa liczby), a klasa odpala
+   animacje w CSS — przebieg gradientu po liniach, poświatę pod
+   kontenerem i podbicie samej liczby. Klasa schodzi i wraca po
+   przeliczeniu układu, żeby kolejna poprawna odpowiedź odpalała
+   animację od nowa. */
 function addQuizPoints() {
   if (!quizEls) return;
   const { score } = quizEls;
+  const from = Number(score.value.textContent) || 0;
   score.points += QUIZ_SCORE.gain;
-  score.value.textContent = String(score.points);
+  startScoreCount(score.value, from, score.points, QUIZ_SCORE.countMs);
   score.el.classList.remove("gain");
   void score.el.offsetWidth;
   score.el.classList.add("gain");
@@ -1705,6 +1732,7 @@ function mountView(id) {
   plateEl = null;
   quizEls = null;
   seqEls = null;
+  scoreCount.el = null;
   clearResultsTimers();
   resultEls = [];
   podiumEl = null;
@@ -2547,6 +2575,7 @@ function tickQuiz(now) {
 function tick(now) {
   /* Zegar chodzi tylko na widokach, które go mają — Would You Press
      nie odlicza czasu */
+  stepScoreCount(now); // licznik punktów dojeżdża niezależnie od widoku
   if (currentViewId === "instruktaz") tickInstruktaz(now);
   else if (currentViewId === "quiz") tickQuiz(now);
   else if (currentViewId === "kolejnosc") tickSekwencja(now);
