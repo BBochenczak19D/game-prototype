@@ -309,7 +309,7 @@ domyślnie 500) i odpala animację:
 
 | Wersja | Co się dzieje |
 | --- | --- |
-| **V1 · gradient na zewnątrz** | jasny punkt gradientu przebiega **raz** po obu liniach od kontenera na zewnątrz (900 ms), a pod kontenerem zapala się i gaśnie poświata |
+| **V1 · gradient na zewnątrz** | jasny punkt gradientu przebiega **raz** po obu liniach od kontenera na zewnątrz (1,3 s), a pod kontenerem zapala się i gaśnie poświata |
 
 Punkty lecą **raz na pytanie**, przy pierwszym trafieniu — zmiana zdania
 na inną odpowiedź i powrót ich nie powiela. Po upływie czasu przyciski
@@ -321,6 +321,10 @@ maska wycinająca wąskie okno (pozycja idzie zmienną zarejestrowaną przez
 prawej linii samo odwraca kierunek, więc obie strony obsługuje jedna
 animacja. Poświata pod punktami to `drop-shadow`, a nie `box-shadow` —
 trzyma się ściętych rogów kontenera, a nie jego prostokątnego pudełka.
+
+Tempo obu ruchów trzyma jedna zmienna `--score-gain` na `.quiz-score`
+— przebieg i poświata kończą się razem, więc całość przyspiesza się
+i zwalnia jedną liczbą.
 
 **Uwaga:** linia ma w designie 1 px grubości i niskie krycie, więc
 w podglądzie przeskalowanym do okna przebieg jest ledwie widoczny —

@@ -1859,6 +1859,10 @@ body {
    wstawiane z app.js prosto z granic renderu w Figmie.
    ============================================================ */
 .quiz-score {
+  /* Jeden czas dla przebiegu po liniach i dla poświaty — obie kończą się
+     razem, więc tempo całej animacji stroi się tu jedną liczbą. */
+  --score-gain: 1300ms;
+
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -1954,7 +1958,7 @@ body {
 }
 
 .quiz-score[data-anim="v1"].gain .quiz-score-pulse {
-  animation: score-pulse 900ms cubic-bezier(0.33, 0, 0.3, 1);
+  animation: score-pulse var(--score-gain) cubic-bezier(0.33, 0, 0.3, 1);
 }
 
 /* Jasny koniec gradientu jest przy kontenerze, czyli po prawej stronie
@@ -1970,7 +1974,7 @@ body {
 /* Poświata pod punktami — drop-shadow, a nie box-shadow, żeby trzymała
    się ściętych rogów kontenera, a nie jego prostokątnego pudełka */
 .quiz-score[data-anim="v1"].gain .quiz-score-box > img {
-  animation: score-box-glow 900ms ease-out;
+  animation: score-box-glow var(--score-gain) ease-out;
 }
 
 @keyframes score-box-glow {
